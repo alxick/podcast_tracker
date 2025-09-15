@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { useAuth } from '@/components/auth/AuthProvider'
 import { cn } from '@/lib/utils'
 import { 
   BarChart3, 
@@ -22,6 +23,13 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
+  const { signOut } = useAuth()
+
+  const handleSignOut = async () => {
+    await signOut()
+    router.push('/login')
+  }
 
   return (
     <div className="flex h-full w-64 flex-col bg-gray-900">
@@ -57,13 +65,13 @@ export function Sidebar() {
             </ul>
           </li>
           <li className="mt-auto">
-            <Link
-              href="/login"
-              className="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 text-gray-400 hover:bg-gray-800 hover:text-white"
+            <button
+              onClick={handleSignOut}
+              className="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 text-gray-400 hover:bg-gray-800 hover:text-white w-full text-left"
             >
               <LogOut className="h-6 w-6 shrink-0" aria-hidden="true" />
               Выйти
-            </Link>
+            </button>
           </li>
         </ul>
       </nav>
