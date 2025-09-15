@@ -48,7 +48,7 @@ export default function PodcastDetailPage() {
       const trackingResponse = await fetch('/api/user/podcasts')
       if (trackingResponse.ok) {
         const trackingData = await trackingResponse.json()
-        const trackingIds = trackingData.podcasts.map((p: any) => p.podcast_id)
+        const trackingIds = trackingData.podcasts.map((p: { podcast_id: string }) => p.podcast_id)
         setIsTracking(trackingIds.includes(params.id))
       }
     } catch (error) {

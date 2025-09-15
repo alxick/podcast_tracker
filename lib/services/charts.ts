@@ -13,7 +13,19 @@ export async function getAppleCharts(category: string = '1310', limit = 50) {
     
     const data = await response.json()
     
-    return data.feed.entry.map((entry: any, index: number) => ({
+    if (!data.feed?.entry) {
+      return []
+    }
+    
+    return data.feed.entry.map((entry: {
+      id: { attributes: { 'im:id': string } }
+      'im:name': { label: string }
+      'im:artist': { label: string }
+      summary?: { label: string }
+      'im:image': Array<{ label: string }>
+      category: { attributes: { label: string } }
+      link: { attributes: { href: string } }
+    }, index: number) => ({
       id: entry.id.attributes['im:id'],
       source: 'apple' as const,
       source_id: entry.id.attributes['im:id'],

@@ -17,7 +17,17 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    let results: any[] = []
+    let results: Array<{
+      id: string
+      source: 'spotify' | 'apple'
+      source_id: string
+      title: string
+      author?: string
+      description?: string
+      image_url?: string
+      category?: string
+      rss_url?: string
+    }> = []
 
     // Поиск в Spotify
     if (platform === 'all' || platform === 'spotify') {

@@ -14,7 +14,21 @@ export async function searchPodcasts(query: string, limit = 20) {
     
     const data = await response.json()
     
-    return data.results.map((result: any) => ({
+    if (!data.results || !Array.isArray(data.results)) {
+      return []
+    }
+    
+    return data.results.map((result: {
+      collectionId: number
+      collectionName: string
+      artistName: string
+      collectionCensoredName: string
+      artworkUrl600: string
+      primaryGenreName: string
+      feedUrl: string
+      country: string
+      releaseDate: string
+    }) => ({
       id: result.collectionId.toString(),
       source: 'apple' as const,
       source_id: result.collectionId.toString(),
@@ -46,11 +60,23 @@ export async function getPodcastDetails(collectionId: string) {
     
     const data = await response.json()
     
-    if (data.resultCount === 0) {
+    if (data.resultCount === 0 || !data.results || !Array.isArray(data.results) || data.results.length === 0) {
       throw new Error('Podcast not found')
     }
     
-    const result = data.results[0]
+    const result = data.results[0] as {
+      collectionId: number
+      collectionName: string
+      artistName: string
+      collectionCensoredName: string
+      artworkUrl600: string
+      primaryGenreName: string
+      feedUrl: string
+      country: string
+      releaseDate: string
+      trackCount: number
+      genres: string[]
+    }
     
     return {
       id: result.collectionId.toString(),
@@ -96,7 +122,14 @@ export async function getPodcastEpisodes(rssUrl: string, limit = 50) {
 
 // Простой парсер RSS фида
 function parseRSSFeed(xmlText: string, limit: number) {
-  const episodes: any[] = []
+  const episodes: Array<{
+    id: string
+    title: string
+    description: string
+    published_at: string
+    duration?: number
+    audio_url?: string
+  }> = []
   
   // Находим все элементы <item>
   const itemRegex = /<item>([\s\S]*?)<\/item>/g

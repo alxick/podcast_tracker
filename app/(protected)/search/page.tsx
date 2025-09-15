@@ -24,7 +24,7 @@ export default function SearchPage() {
       const response = await fetch('/api/user/podcasts')
       if (response.ok) {
         const data = await response.json()
-        setTrackingPodcasts(data.podcasts.map((p: any) => p.podcast_id))
+        setTrackingPodcasts(data.podcasts.map((p: { podcast_id: string }) => p.podcast_id))
       }
     } catch (error) {
       console.error('Error loading tracking podcasts:', error)
