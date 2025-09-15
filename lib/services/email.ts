@@ -19,6 +19,11 @@ export async function sendEmail(template: EmailTemplate) {
     return { success: false, error: 'SendGrid not configured' }
   }
 
+  if (!template.to || !template.subject) {
+    console.warn('Invalid email template: missing to or subject')
+    return { success: false, error: 'Invalid email template' }
+  }
+
   try {
     const msg = {
       to: template.to,

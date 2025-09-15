@@ -8,7 +8,7 @@ export async function sendDailyDigest() {
     const supabase = await createClient()
     
     // Получаем всех пользователей с включенными уведомлениями
-    const { data: users } = await supabase
+    const { data: users, error } = await supabase
       .from('notification_settings')
       .select(`
         user_id,
@@ -16,6 +16,11 @@ export async function sendDailyDigest() {
       `)
       .eq('daily_digest', true)
       .eq('email_notifications', true)
+
+    if (error) {
+      console.error('Error fetching users for daily digest:', error)
+      return
+    }
 
     if (!users || users.length === 0) {
       console.log('No users with daily digest enabled')
@@ -80,11 +85,16 @@ export async function sendPositionAlert(userId: string, podcastId: string, oldPo
     const supabase = await createClient()
     
     // Получаем настройки пользователя
-    const { data: settings } = await supabase
+    const { data: settings, error: settingsError } = await supabase
       .from('notification_settings')
       .select('instant_alerts, email_notifications')
       .eq('user_id', userId)
       .single()
+
+    if (settingsError) {
+      console.error('Error fetching user settings:', settingsError)
+      return
+    }
 
     if (!settings?.instant_alerts || !settings?.email_notifications) {
       return
@@ -140,11 +150,16 @@ export async function sendNewEpisodeAlert(userId: string, podcastId: string, epi
     const supabase = await createClient()
     
     // Получаем настройки пользователя
-    const { data: settings } = await supabase
+    const { data: settings, error: settingsError } = await supabase
       .from('notification_settings')
       .select('email_notifications')
       .eq('user_id', userId)
       .single()
+
+    if (settingsError) {
+      console.error('Error fetching user settings:', settingsError)
+      return
+    }
 
     if (!settings?.email_notifications) {
       return
@@ -191,20 +206,30 @@ export async function sendWelcomeEmail(userId: string) {
     const supabase = await createClient()
     
     // Получаем email пользователя
-    const { data: user } = await supabase
+    const { data: user, error } = await supabase
       .from('users')
       .select('email')
       .eq('id', userId)
       .single()
 
+    if (error) {
+      console.error('Error fetching user for welcome email:', error)
+      return
+    }
+
     if (!user) {
+      console.warn('User not found for welcome email:', userId)
       return
     }
 
     const template = emailTemplates.welcome(user.email)
-    await sendEmail(template)
+    const result = await sendEmail(template)
     
-    console.log(`Welcome email sent to ${user.email}`)
+    if (result.success) {
+      console.log(`Welcome email sent to ${user.email}`)
+    } else {
+      console.error(`Failed to send welcome email to ${user.email}:`, result.error)
+    }
   } catch (error) {
     console.error('Error sending welcome email:', error)
   }

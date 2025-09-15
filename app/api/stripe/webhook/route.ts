@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
           const customerId = session.customer as string
           
           // Обновляем план пользователя
-          const planId = getPlanIdFromPriceId(subscription.items.data[0].price.id)
+          const planId = await getPlanIdFromPriceId(subscription.items.data[0].price.id)
           
           await supabase
             .from('users')
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         const customerId = subscription.customer as string
         
         if (subscription.status === 'active') {
-          const planId = getPlanIdFromPriceId(subscription.items.data[0].price.id)
+          const planId = await getPlanIdFromPriceId(subscription.items.data[0].price.id)
           
           await supabase
             .from('users')
@@ -127,8 +127,20 @@ export async function POST(request: NextRequest) {
 }
 
 // Вспомогательная функция для определения плана по price ID
-function getPlanIdFromPriceId(priceId: string): string {
-  // В реальном приложении нужно хранить соответствие price ID и планов
-  // Пока что возвращаем по умолчанию
-  return 'starter'
+async function getPlanIdFromPriceId(priceId: string): Promise<string> {
+  try {
+    // Получаем информацию о price из Stripe
+    const price = await stripe.prices.retrieve(priceId)
+    
+    // Определяем план по цене
+    switch (price.unit_amount) {
+      case 1000: return 'starter'
+      case 2000: return 'pro'
+      case 9900: return 'agency'
+      default: return 'starter'
+    }
+  } catch (error) {
+    console.error('Error getting price info:', error)
+    return 'starter'
+  }
 }

@@ -188,6 +188,21 @@ export async function createPrice(planId: string) {
       return null
     }
     
+    // Сначала проверяем, существует ли уже price для этого плана
+    const existingPrices = await stripe.prices.list({
+      active: true,
+      type: 'recurring',
+    })
+    
+    const existingPrice = existingPrices.data.find(p => 
+      p.unit_amount === plan.price && 
+      p.recurring?.interval === plan.interval
+    )
+    
+    if (existingPrice) {
+      return existingPrice
+    }
+    
     const price = await stripe.prices.create({
       unit_amount: plan.price,
       currency: 'usd',

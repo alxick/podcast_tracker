@@ -38,8 +38,14 @@ export default function BillingPage() {
         const stripeInstance = await stripe.loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
         
         if (stripeInstance) {
-          await stripeInstance.redirectToCheckout({ sessionId })
+          const { error } = await stripeInstance.redirectToCheckout({ sessionId })
+          if (error) {
+            console.error('Stripe checkout error:', error)
+          }
         }
+      } else {
+        const errorData = await response.json()
+        console.error('API error:', errorData.error)
       }
     } catch (error) {
       console.error('Error creating checkout session:', error)
@@ -57,6 +63,9 @@ export default function BillingPage() {
       if (response.ok) {
         const { url } = await response.json()
         window.location.href = url
+      } else {
+        const errorData = await response.json()
+        console.error('API error:', errorData.error)
       }
     } catch (error) {
       console.error('Error creating portal session:', error)

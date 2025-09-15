@@ -6,6 +6,11 @@ const http = require('http')
 const CRON_URL = process.env.CRON_URL || 'http://localhost:3000/api/cron/update'
 const CRON_SECRET = process.env.CRON_SECRET_TOKEN
 
+if (!CRON_SECRET) {
+  console.error('CRON_SECRET_TOKEN not configured')
+  process.exit(1)
+}
+
 async function runCronJob() {
   try {
     console.log('Running cron job...')

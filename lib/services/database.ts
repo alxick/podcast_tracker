@@ -53,7 +53,7 @@ export async function getPodcastBySource(source: string, sourceId: string) {
     throw new Error('Failed to get podcast by source')
   }
   
-  return data
+  return data || null
 }
 
 // Сохранение эпизодов подкаста
