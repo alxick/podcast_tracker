@@ -1,8 +1,83 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useAuth } from '@/components/auth/AuthProvider'
+import { SearchForm } from '@/components/search/SearchForm'
+import { SearchResults } from '@/components/search/SearchResults'
+import { Podcast } from '@/lib/types/database'
 
 export default function SearchPage() {
+  const [results, setResults] = useState<Podcast[]>([])
+  const [loading, setLoading] = useState(false)
+  const [trackingPodcasts, setTrackingPodcasts] = useState<string[]>([])
+  const { user } = useAuth()
+
+  // Загружаем отслеживаемые подкасты
+  useEffect(() => {
+    if (user) {
+      loadTrackingPodcasts()
+    }
+  }, [user])
+
+  const loadTrackingPodcasts = async () => {
+    try {
+      const response = await fetch('/api/user/podcasts')
+      if (response.ok) {
+        const data = await response.json()
+        setTrackingPodcasts(data.podcasts.map((p: any) => p.podcast_id))
+      }
+    } catch (error) {
+      console.error('Error loading tracking podcasts:', error)
+    }
+  }
+
+  const handleSearch = async (query: string, platform: string) => {
+    setLoading(true)
+    try {
+      const response = await fetch(`/api/podcasts/search?q=${encodeURIComponent(query)}&platform=${platform}`)
+      if (response.ok) {
+        const data = await response.json()
+        setResults(data.results)
+      } else {
+        console.error('Search failed')
+      }
+    } catch (error) {
+      console.error('Search error:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAddPodcast = async (podcastId: string) => {
+    try {
+      const response = await fetch('/api/user/podcasts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ podcastId }),
+      })
+      
+      if (response.ok) {
+        setTrackingPodcasts(prev => [...prev, podcastId])
+      }
+    } catch (error) {
+      console.error('Error adding podcast:', error)
+    }
+  }
+
+  const handleRemovePodcast = async (podcastId: string) => {
+    try {
+      const response = await fetch(`/api/user/podcasts?podcastId=${podcastId}`, {
+        method: 'DELETE',
+      })
+      
+      if (response.ok) {
+        setTrackingPodcasts(prev => prev.filter(id => id !== podcastId))
+      }
+    } catch (error) {
+      console.error('Error removing podcast:', error)
+    }
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
@@ -14,39 +89,16 @@ export default function SearchPage() {
         </p>
       </div>
 
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>Поиск</CardTitle>
-          <CardDescription>
-            Введите название подкаста для поиска
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Введите название подкаста..."
-              className="flex-1"
-            />
-            <Button>Найти</Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Результаты поиска</CardTitle>
-          <CardDescription>
-            Найденные подкасты
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <p className="text-gray-500">
-              Введите запрос для поиска подкастов
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-8">
+        <SearchForm onSearch={handleSearch} loading={loading} />
+        <SearchResults
+          results={results}
+          loading={loading}
+          onAddPodcast={handleAddPodcast}
+          onRemovePodcast={handleRemovePodcast}
+          trackingPodcasts={trackingPodcasts}
+        />
+      </div>
     </div>
   )
 }
