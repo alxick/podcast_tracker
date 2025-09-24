@@ -22,13 +22,35 @@ export async function searchPodcasts(query: string, limit = 20, country: string 
   try {
     await getAccessToken()
     
-    // Добавляем параметр языка для получения результатов по стране
-    const data = await spotifyApi.search(query, ['show'], { 
-      limit,
-      market: country // Используем переданную страну
-    })
+    // Используем прямые HTTP запросы для лучшего контроля над параметрами
+    const accessToken = spotifyApi.getAccessToken()
+    if (!accessToken) {
+      throw new Error('No access token available')
+    }
     
-    return data.body.shows?.items.map(show => ({
+    // Кодируем запрос для URL
+    const encodedQuery = encodeURIComponent(query)
+    
+    // Делаем прямой запрос к Spotify API с принудительными параметрами
+    const response = await fetch(
+      `https://api.spotify.com/v1/search?q=${encodedQuery}&type=show&limit=${limit}&market=${country}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept-Language': 'en-US,en;q=0.9', // Принудительно английский язык
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      }
+    )
+    
+    if (!response.ok) {
+      throw new Error(`Spotify API error: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    
+    return data.shows?.items.map((show: any) => ({
       id: show.id,
       source: 'spotify' as const,
       source_id: show.id,
