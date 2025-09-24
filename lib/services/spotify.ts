@@ -18,14 +18,14 @@ async function getAccessToken() {
 }
 
 // Поиск подкастов
-export async function searchPodcasts(query: string, limit = 20) {
+export async function searchPodcasts(query: string, limit = 20, country: string = 'US') {
   try {
     await getAccessToken()
     
-    // Добавляем параметр языка для получения английских результатов
+    // Добавляем параметр языка для получения результатов по стране
     const data = await spotifyApi.search(query, ['show'], { 
       limit,
-      market: 'US' // Принудительно используем US рынок для английских результатов
+      market: country // Используем переданную страну
     })
     
     return data.body.shows?.items.map(show => ({

@@ -8,9 +8,10 @@ export async function GET(request: NextRequest) {
     const platform = searchParams.get('platform') as 'spotify' | 'apple' || 'apple'
     const category = searchParams.get('category') || '1310'
     const limit = parseInt(searchParams.get('limit') || '50')
+    const country = searchParams.get('country') || (platform === 'apple' ? 'ru' : 'US')
 
     // Получаем чарты
-    const charts = await getCharts(platform, category, limit)
+    const charts = await getCharts(platform, category, limit, country)
 
     // Сохраняем позиции в БД
     try {

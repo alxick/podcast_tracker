@@ -1,11 +1,11 @@
 // Сервис для работы с чартами подкастов
 
 // Получение топ-чартов Apple Podcasts
-export async function getAppleCharts(category: string = '1310', limit = 50) {
+export async function getAppleCharts(category: string = '1310', limit = 50, country: string = 'ru') {
   try {
-    // Используем русский регион для получения русских подкастов
+    // Используем переданную страну для получения подкастов
     const response = await fetch(
-      `https://itunes.apple.com/ru/rss/toppodcasts/limit=${limit}/genre=${category}/json`
+      `https://itunes.apple.com/${country}/rss/toppodcasts/limit=${limit}/genre=${category}/json`
     )
     
     if (!response.ok) {
@@ -45,7 +45,7 @@ export async function getAppleCharts(category: string = '1310', limit = 50) {
 }
 
 // Получение топ-чартов Spotify через поиск по категориям
-export async function getSpotifyCharts(limit = 50) {
+export async function getSpotifyCharts(limit = 50, country: string = 'US') {
   try {
     // Импортируем Spotify сервис
     const { searchPodcasts } = await import('./spotify')
@@ -64,10 +64,10 @@ export async function getSpotifyCharts(limit = 50) {
     
     const allPodcasts = []
     
-    // Ищем подкасты по разным запросам
+    // Ищем подкасты по разным запросам с учетом страны
     for (const query of searchQueries) {
       try {
-        const results = await searchPodcasts(query, Math.ceil(limit / searchQueries.length))
+        const results = await searchPodcasts(query, Math.ceil(limit / searchQueries.length), country)
         allPodcasts.push(...results)
       } catch (error) {
         console.error(`Error searching for "${query}":`, error)
@@ -219,11 +219,11 @@ export async function getSpotifyCharts(limit = 50) {
 }
 
 // Получение чартов по платформе
-export async function getCharts(platform: 'spotify' | 'apple', category?: string, limit = 50) {
+export async function getCharts(platform: 'spotify' | 'apple', category?: string, limit = 50, country?: string) {
   if (platform === 'apple') {
-    return await getAppleCharts(category, limit)
+    return await getAppleCharts(category, limit, country)
   } else {
-    return await getSpotifyCharts(limit)
+    return await getSpotifyCharts(limit, country)
   }
 }
 

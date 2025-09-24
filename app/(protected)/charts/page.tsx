@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { CountrySelector } from '@/components/ui/country-selector'
 import Image from 'next/image'
 
 interface ChartPodcast {
@@ -43,15 +44,16 @@ export default function ChartsPage() {
   const [loading, setLoading] = useState(false)
   const [selectedPlatform, setSelectedPlatform] = useState<'spotify' | 'apple'>('apple')
   const [selectedCategory, setSelectedCategory] = useState('1310')
+  const [selectedCountry, setSelectedCountry] = useState('ru')
 
   useEffect(() => {
     loadCharts()
-  }, [selectedPlatform, selectedCategory])
+  }, [selectedPlatform, selectedCategory, selectedCountry])
 
   const loadCharts = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`/api/charts?platform=${selectedPlatform}&category=${selectedCategory}&limit=50`)
+      const response = await fetch(`/api/charts?platform=${selectedPlatform}&category=${selectedCategory}&limit=50&country=${selectedCountry}`)
       if (response.ok) {
         const data = await response.json()
         setCharts(data.charts)
@@ -119,6 +121,16 @@ export default function ChartsPage() {
                     </Button>
                   ))}
                 </div>
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium mb-2">Страна:</p>
+                <CountrySelector
+                  value={selectedCountry}
+                  onChange={setSelectedCountry}
+                  platform={selectedPlatform}
+                  className="w-64"
+                />
               </div>
             </div>
           </CardContent>
