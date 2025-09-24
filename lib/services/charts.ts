@@ -43,11 +43,52 @@ export async function getAppleCharts(category: string = '1310', limit = 50) {
   }
 }
 
-// Получение топ-чартов Spotify (mock данные)
+// Получение топ-чартов Spotify через поиск по категориям
 export async function getSpotifyCharts(limit = 50) {
   try {
-    // Spotify не предоставляет публичные чарты подкастов
-    // Возвращаем популярные подкасты для демонстрации
+    // Импортируем Spotify сервис
+    const { searchPodcasts } = await import('./spotify')
+    
+    // Популярные поисковые запросы для получения топ-подкастов
+    const searchQueries = [
+      'podcast',
+      'comedy podcast', 
+      'true crime podcast',
+      'news podcast',
+      'business podcast',
+      'technology podcast',
+      'education podcast',
+      'society culture podcast'
+    ]
+    
+    const allPodcasts = []
+    
+    // Ищем подкасты по разным запросам
+    for (const query of searchQueries) {
+      try {
+        const results = await searchPodcasts(query, Math.ceil(limit / searchQueries.length))
+        allPodcasts.push(...results)
+      } catch (error) {
+        console.error(`Error searching for "${query}":`, error)
+        // Продолжаем с другими запросами
+      }
+    }
+    
+    // Убираем дубликаты по source_id
+    const uniquePodcasts = allPodcasts.filter((podcast, index, self) => 
+      index === self.findIndex(p => p.source_id === podcast.source_id)
+    )
+    
+    // Добавляем позиции
+    const podcastsWithPositions = uniquePodcasts.slice(0, limit).map((podcast, index) => ({
+      ...podcast,
+      position: index + 1,
+    }))
+    
+    return podcastsWithPositions
+  } catch (error) {
+    console.error('Error getting Spotify charts:', error)
+    // Fallback на mock данные если API не работает
     const popularPodcasts = [
       {
         id: 'spotify_1',
@@ -173,9 +214,6 @@ export async function getSpotifyCharts(limit = 50) {
     
     // Возвращаем только запрошенное количество
     return popularPodcasts.slice(0, limit)
-  } catch (error) {
-    console.error('Error getting Spotify charts:', error)
-    throw new Error('Failed to get Spotify charts')
   }
 }
 
