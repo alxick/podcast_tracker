@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPodcast, getPodcastEpisodes } from '@/lib/services/database'
+import { getPodcast, getPodcastEpisodes, getPodcastBySource } from '@/lib/services/database'
 import { getPodcastEpisodes as getSpotifyEpisodes } from '@/lib/services/spotify'
 import { getPodcastEpisodes as getAppleEpisodes } from '@/lib/services/apple'
 import { saveEpisodes } from '@/lib/services/database'
@@ -14,8 +14,17 @@ export async function GET(
     const limit = parseInt(searchParams.get('limit') || '50')
     const refresh = searchParams.get('refresh') === 'true'
 
-    // Получаем подкаст
-    const podcast = await getPodcast(id)
+    // Сначала пытаемся найти по source_id (чаще всего это source_id)
+    let podcast = await getPodcastBySource('spotify', id)
+    if (!podcast) {
+      podcast = await getPodcastBySource('apple', id)
+    }
+    
+    // Если не найден по source_id, пытаемся найти по UUID
+    if (!podcast) {
+      podcast = await getPodcast(id)
+    }
+    
     if (!podcast) {
       return NextResponse.json(
         { error: 'Podcast not found' },

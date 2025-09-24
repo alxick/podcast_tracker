@@ -13,16 +13,15 @@ export async function GET(
     const { searchParams } = new URL(request.url)
     const includeEpisodes = searchParams.get('episodes') === 'true'
 
-    // Получаем подкаст из БД
-    let podcast = await getPodcast(id)
-
-    // Если подкаст не найден в БД, пытаемся найти по source_id
+    // Сначала пытаемся найти по source_id (чаще всего это source_id)
+    let podcast = await getPodcastBySource('spotify', id)
     if (!podcast) {
-      // Предполагаем, что id может быть source_id
-      const spotifyPodcast = await getPodcastBySource('spotify', id)
-      const applePodcast = await getPodcastBySource('apple', id)
-      
-      podcast = spotifyPodcast || applePodcast
+      podcast = await getPodcastBySource('apple', id)
+    }
+    
+    // Если не найден по source_id, пытаемся найти по UUID
+    if (!podcast) {
+      podcast = await getPodcast(id)
     }
 
     if (!podcast) {
