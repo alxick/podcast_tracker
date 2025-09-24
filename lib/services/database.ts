@@ -1,9 +1,19 @@
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@/lib/supabase/server'
 import { Podcast, Episode, Chart, UserPodcast } from '@/lib/types/database'
 
-// Сохранение подкаста в БД
+// Создание клиента с Service Role для админских операций
+function createServiceRoleClient() {
+  const { createClient: createSupabaseClient } = require('@supabase/supabase-js')
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
+
+// Сохранение подкаста в БД (с Service Role)
 export async function savePodcast(podcast: Omit<Podcast, 'id' | 'created_at'>) {
-  const supabase = await createClient()
+  const supabase = createServiceRoleClient()
   
   const { data, error } = await supabase
     .from('podcasts')
@@ -37,9 +47,9 @@ export async function getPodcast(id: string) {
   return data
 }
 
-// Получение подкаста по source и source_id
+// Получение подкаста по source и source_id (с Service Role)
 export async function getPodcastBySource(source: string, sourceId: string) {
-  const supabase = await createClient()
+  const supabase = createServiceRoleClient()
   
   const { data, error } = await supabase
     .from('podcasts')
@@ -92,9 +102,9 @@ export async function getPodcastEpisodes(podcastId: string, limit = 50) {
   return data
 }
 
-// Сохранение позиций в чартах
+// Сохранение позиций в чартах (с Service Role)
 export async function saveChartPositions(charts: Omit<Chart, 'id' | 'created_at'>[]) {
-  const supabase = await createClient()
+  const supabase = createServiceRoleClient()
   
   const { data, error } = await supabase
     .from('charts')
