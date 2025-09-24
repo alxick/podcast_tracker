@@ -14,13 +14,38 @@ export async function GET(request: NextRequest) {
 
     // Сохраняем позиции в БД
     try {
-      const chartPositions = charts.map((chart, index) => ({
-        podcast_id: chart.id,
-        platform: chart.source,
-        category: chart.category || 'General',
-        position: index + 1,
-        date: new Date().toISOString().split('T')[0],
-      }))
+      const chartPositions = []
+      
+      for (let i = 0; i < charts.length; i++) {
+        const chart = charts[i]
+        
+        // Сначала находим или создаем подкаст в БД
+        const { getPodcastBySource, savePodcast } = await import('@/lib/services/database')
+        
+        let podcast = await getPodcastBySource(chart.source, chart.source_id)
+        
+        if (!podcast) {
+          // Создаем подкаст если его нет
+          podcast = await savePodcast({
+            source: chart.source,
+            source_id: chart.source_id,
+            title: chart.title,
+            author: chart.author,
+            description: chart.description,
+            image_url: chart.image_url,
+            category: chart.category,
+            rss_url: chart.rss_url,
+          })
+        }
+        
+        chartPositions.push({
+          podcast_id: podcast.id, // Используем UUID из БД
+          platform: chart.source,
+          category: chart.category || 'General',
+          position: i + 1,
+          date: new Date().toISOString().split('T')[0],
+        })
+      }
 
       await saveChartPositions(chartPositions)
     } catch (error) {
