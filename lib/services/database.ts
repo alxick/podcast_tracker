@@ -150,8 +150,9 @@ export async function createUser(userId: string, email: string) {
     .insert({ 
       id: userId, 
       email: email,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      password_hash: '', // Пустой пароль для OAuth пользователей
+      plan: 'free',
+      created_at: new Date().toISOString()
     })
     .select()
     .single()
