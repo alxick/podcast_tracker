@@ -39,7 +39,10 @@ export async function searchPodcasts(query: string, limit = 20, country: string 
           'Authorization': `Bearer ${accessToken}`,
           'Accept-Language': 'en-US,en;q=0.9', // Принудительно английский язык
           'Accept': 'application/json',
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          'X-Forwarded-For': '8.8.8.8', // Принудительно US IP
+          'CF-IPCountry': 'US' // Cloudflare country header
         }
       }
     )
