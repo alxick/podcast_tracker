@@ -64,7 +64,7 @@ export async function GET(
 
     // Если не удалось получить эпизоды из API, берем из БД
     if (episodes.length === 0) {
-      episodes = await getPodcastEpisodes(id, limit)
+      episodes = await getPodcastEpisodes(podcast.id, limit)
     }
 
     return NextResponse.json({ episodes })
