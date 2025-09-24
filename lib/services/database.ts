@@ -141,6 +141,45 @@ export async function getPodcastChartHistory(podcastId: string, days = 30) {
   return data
 }
 
+// Создание пользователя в БД
+export async function createUser(userId: string, email: string) {
+  const supabase = await createServiceRoleClient()
+  
+  const { data, error } = await supabase
+    .from('users')
+    .insert({ 
+      id: userId, 
+      email: email,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .select()
+    .single()
+  
+  if (error) {
+    console.error('Error creating user:', error)
+    // Игнорируем ошибку если пользователь уже существует
+    if (error.code !== '23505') {
+      throw new Error('Failed to create user')
+    }
+  }
+  
+  return data
+}
+
+// Проверка существования пользователя
+export async function userExists(userId: string) {
+  const supabase = await createClient()
+  
+  const { data, error } = await supabase
+    .from('users')
+    .select('id')
+    .eq('id', userId)
+    .single()
+  
+  return !error && data
+}
+
 // Добавление подкаста в отслеживание пользователя
 export async function addUserPodcast(userId: string, podcastId: string) {
   const supabase = await createClient()
