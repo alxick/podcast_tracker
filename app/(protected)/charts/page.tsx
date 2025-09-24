@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { CountrySelector } from '@/components/ui/country-selector'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 
 interface ChartPodcast {
@@ -40,6 +41,7 @@ const categories = [
 ]
 
 export default function ChartsPage() {
+  const router = useRouter()
   const [charts, setCharts] = useState<ChartPodcast[]>([])
   const [loading, setLoading] = useState(false)
   const [selectedPlatform, setSelectedPlatform] = useState<'spotify' | 'apple'>('apple')
@@ -186,8 +188,11 @@ export default function ChartsPage() {
                                 <span className="text-gray-400 text-xs">Нет фото</span>
                               </div>
                             )}
-                            <div>
-                              <p className="font-medium truncate max-w-xs">{podcast.title}</p>
+                            <div 
+                              className="cursor-pointer hover:bg-gray-50 p-2 rounded"
+                              onClick={() => router.push(`/podcast/${podcast.id}`)}
+                            >
+                              <p className="font-medium truncate max-w-xs hover:text-blue-600">{podcast.title}</p>
                               {podcast.description && (
                                 <p className="text-sm text-gray-600 truncate max-w-xs">
                                   {podcast.description}

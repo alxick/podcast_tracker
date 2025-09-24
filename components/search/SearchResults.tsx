@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -22,6 +23,7 @@ export function SearchResults({
   onRemovePodcast, 
   trackingPodcasts 
 }: SearchResultsProps) {
+  const router = useRouter()
   const [addingPodcasts, setAddingPodcasts] = useState<Set<string>>(new Set())
 
   const handleAddPodcast = async (podcastId: string) => {
@@ -110,8 +112,11 @@ export function SearchResults({
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-lg truncate">{podcast.title}</h4>
+                      <div 
+                        className="flex-1 min-w-0 cursor-pointer hover:bg-gray-50 p-2 rounded"
+                        onClick={() => router.push(`/podcast/${podcast.id}`)}
+                      >
+                        <h4 className="font-semibold text-lg truncate hover:text-blue-600">{podcast.title}</h4>
                         <p className="text-sm text-gray-600 truncate">{podcast.author}</p>
                         {podcast.description && (
                           <p className="text-sm text-gray-500 mt-1 line-clamp-2">
