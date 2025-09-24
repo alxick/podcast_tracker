@@ -63,6 +63,8 @@ export async function searchPodcasts(query: string, limit = 20, country: string 
       image_url: show.images?.[0]?.url,
       category: show.genres?.[0],
       rss_url: show.external_urls?.spotify,
+      // Добавляем флаг для определения языка
+      isEnglish: /^[a-zA-Z0-9\s\-_.,!?]+$/.test(show.name) && /^[a-zA-Z0-9\s\-_.,!?]+$/.test(show.publisher || '')
     })) || []
   } catch (error) {
     console.error('Error searching Spotify podcasts:', error)
