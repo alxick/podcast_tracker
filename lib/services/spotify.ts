@@ -22,7 +22,11 @@ export async function searchPodcasts(query: string, limit = 20) {
   try {
     await getAccessToken()
     
-    const data = await spotifyApi.search(query, ['show'], { limit })
+    // Добавляем параметр языка для получения английских результатов
+    const data = await spotifyApi.search(query, ['show'], { 
+      limit,
+      market: 'US' // Принудительно используем US рынок для английских результатов
+    })
     
     return data.body.shows?.items.map(show => ({
       id: show.id,

@@ -3,8 +3,9 @@
 // Получение топ-чартов Apple Podcasts
 export async function getAppleCharts(category: string = '1310', limit = 50) {
   try {
+    // Используем русский регион для получения русских подкастов
     const response = await fetch(
-      `https://itunes.apple.com/us/rss/toppodcasts/limit=${limit}/genre=${category}/json`
+      `https://itunes.apple.com/ru/rss/toppodcasts/limit=${limit}/genre=${category}/json`
     )
     
     if (!response.ok) {
