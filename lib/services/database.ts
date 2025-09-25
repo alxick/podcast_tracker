@@ -200,6 +200,18 @@ export async function addUserPodcast(userId: string, podcastId: string) {
     throw new Error('Podcast not found')
   }
   
+  // Проверяем, не отслеживается ли уже этот подкаст
+  const { data: existing } = await supabase
+    .from('user_podcasts')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('podcast_id', podcast.id)
+    .single()
+  
+  if (existing) {
+    throw new Error('Podcast already being tracked')
+  }
+  
   const { data, error } = await supabase
     .from('user_podcasts')
     .insert({ user_id: userId, podcast_id: podcast.id })

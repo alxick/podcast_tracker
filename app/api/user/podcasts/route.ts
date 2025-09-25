@@ -86,6 +86,29 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Add user podcast error:', error)
+    
+    // Более детальная обработка ошибок
+    if (error instanceof Error) {
+      if (error.message === 'Podcast not found') {
+        return NextResponse.json(
+          { error: 'Подкаст не найден в базе данных' },
+          { status: 404 }
+        )
+      }
+      if (error.message === 'Podcast already being tracked') {
+        return NextResponse.json(
+          { error: 'Подкаст уже отслеживается' },
+          { status: 409 }
+        )
+      }
+      if (error.message === 'Failed to add user podcast') {
+        return NextResponse.json(
+          { error: 'Ошибка при добавлении подкаста в отслеживание' },
+          { status: 500 }
+        )
+      }
+    }
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

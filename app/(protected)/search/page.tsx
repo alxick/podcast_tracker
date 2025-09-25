@@ -60,9 +60,20 @@ export default function SearchPage() {
       
       if (response.ok) {
         setTrackingPodcasts(prev => [...prev, podcastId])
+      } else {
+        const errorData = await response.json()
+        console.error('Failed to add podcast:', response.status, errorData)
+        
+        // Если подкаст уже отслеживается, обновляем UI без показа ошибки
+        if (response.status === 409) {
+          setTrackingPodcasts(prev => [...prev, podcastId])
+        } else {
+          alert(`Ошибка добавления подкаста: ${errorData.error || 'Неизвестная ошибка'}`)
+        }
       }
     } catch (error) {
       console.error('Error adding podcast:', error)
+      alert('Ошибка сети при добавлении подкаста')
     }
   }
 
