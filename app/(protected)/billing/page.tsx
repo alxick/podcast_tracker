@@ -11,38 +11,73 @@ import { SubscriptionPlan } from '@/lib/types/database'
 export default function BillingPage() {
   const [loading, setLoading] = useState(false)
   const [currentPlan, setCurrentPlan] = useState('free')
-  const [stripeConfigured, setStripeConfigured] = useState(true)
+  const [subscriptionData, setSubscriptionData] = useState<any>(null)
+  const [isLoadingData, setIsLoadingData] = useState(true)
+  const [isSyncing, setIsSyncing] = useState(false)
   const { user } = useAuth()
 
   useEffect(() => {
     if (user) {
-      // В реальном приложении получаем план из БД
-      setCurrentPlan('free')
+      loadSubscriptionData()
     }
-    
-    // Проверяем, настроен ли Stripe
-    setStripeConfigured(!!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
   }, [user])
 
+  const loadSubscriptionData = async () => {
+    try {
+      setIsLoadingData(true)
+      const response = await fetch('/api/user/subscription')
+      if (response.ok) {
+        const data = await response.json()
+        setCurrentPlan(data.user.plan)
+        setSubscriptionData(data)
+      }
+    } catch (error) {
+      console.error('Error loading subscription data:', error)
+    } finally {
+      setIsLoadingData(false)
+    }
+  }
+
   const handleUpgrade = async (planId: string) => {
-    if (planId === 'free') return
+    if (planId === 'free' || planId === currentPlan) return
 
     setLoading(true)
     
-    // Заглушка для тестирования - просто меняем план
-    setTimeout(() => {
-      setCurrentPlan(planId)
+    try {
+      const response = await fetch('/api/stripe/create-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ planId }),
+      })
+
+      if (response.ok) {
+        const { sessionId } = await response.json()
+        
+        // Перенаправляем на Stripe Checkout
+        const stripe = (window as any).Stripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+        if (stripe) {
+          const { error } = await stripe.redirectToCheckout({ sessionId })
+          if (error) {
+            console.error('Stripe error:', error)
+            alert('Ошибка при создании платежа')
+          }
+        }
+      } else {
+        const errorData = await response.json()
+        console.error('API error:', errorData.error)
+        alert(`Ошибка: ${errorData.error}`)
+      }
+    } catch (error) {
+      console.error('Error upgrading plan:', error)
+      alert('Произошла ошибка при обновлении плана')
+    } finally {
       setLoading(false)
-      alert(`План "${subscriptionPlans[planId as keyof typeof subscriptionPlans]?.name}" выбран! (Заглушка для тестирования)`)
-    }, 1000)
+    }
   }
 
   const handleManageBilling = async () => {
-    if (!stripeConfigured) {
-      alert('Управление подпиской доступно только с настроенным Stripe (режим тестирования)')
-      return
-    }
-    
     try {
       const response = await fetch('/api/stripe/create-portal', {
         method: 'POST',
@@ -54,9 +89,36 @@ export default function BillingPage() {
       } else {
         const errorData = await response.json()
         console.error('API error:', errorData.error)
+        alert(`Ошибка: ${errorData.error}`)
       }
     } catch (error) {
       console.error('Error creating portal session:', error)
+      alert('Произошла ошибка при создании портала управления')
+    }
+  }
+
+  const handleSyncSubscription = async () => {
+    setIsSyncing(true)
+    try {
+      const response = await fetch('/api/stripe/sync-subscription', {
+        method: 'POST',
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        alert(`Подписка синхронизирована! План: ${data.plan}`)
+        // Перезагружаем данные
+        await loadSubscriptionData()
+      } else {
+        const errorData = await response.json()
+        console.error('API error:', errorData.error)
+        alert(`Ошибка: ${errorData.error}`)
+      }
+    } catch (error) {
+      console.error('Error syncing subscription:', error)
+      alert('Произошла ошибка при синхронизации подписки')
+    } finally {
+      setIsSyncing(false)
     }
   }
 
@@ -71,16 +133,6 @@ export default function BillingPage() {
         </p>
       </div>
 
-      {!stripeConfigured && (
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h3 className="text-blue-800 font-medium mb-2">
-            🧪 Режим тестирования
-          </h3>
-          <p className="text-blue-700 text-sm">
-            Stripe не настроен. Планы можно выбирать для тестирования интерфейса. Для реальных платежей настройте Stripe API ключи.
-          </p>
-        </div>
-      )}
 
       <div className="grid gap-6">
         <Card>
@@ -91,25 +143,50 @@ export default function BillingPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold">
-                  {subscriptionPlans[currentPlan as keyof typeof subscriptionPlans]?.name}
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {currentPlan === 'free' ? 'Бесплатный план' : `$${subscriptionPlans[currentPlan as keyof typeof subscriptionPlans]?.price! / 100}/месяц`}
-                </p>
+            {isLoadingData ? (
+              <div className="flex items-center justify-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <span className="ml-2">Загрузка...</span>
               </div>
-              {currentPlan !== 'free' && (
-                <Button 
-                  variant="outline" 
-                  onClick={handleManageBilling}
-                  disabled={!stripeConfigured}
-                >
-                  {stripeConfigured ? 'Управлять подпиской' : 'Только для тестирования'}
-                </Button>
-              )}
-            </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold">
+                    {subscriptionPlans[currentPlan as keyof typeof subscriptionPlans]?.name}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    {currentPlan === 'free' ? 'Бесплатный план' : `$${subscriptionPlans[currentPlan as keyof typeof subscriptionPlans]?.price! / 100}/месяц`}
+                  </p>
+                  {subscriptionData?.subscription && (
+                    <div className="mt-2 text-xs text-gray-500">
+                      <p>Статус: {subscriptionData.subscription.status}</p>
+                      {subscriptionData.subscription.current_period_end && (
+                        <p>
+                          Следующее продление: {new Date(subscriptionData.subscription.current_period_end).toLocaleDateString('ru-RU')}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleSyncSubscription}
+                    disabled={isSyncing}
+                  >
+                    {isSyncing ? 'Синхронизация...' : 'Синхронизировать с Stripe'}
+                  </Button>
+                  {currentPlan !== 'free' && (
+                    <Button 
+                      variant="outline" 
+                      onClick={handleManageBilling}
+                    >
+                      Управлять подпиской
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -147,7 +224,7 @@ export default function BillingPage() {
                 >
                   {currentPlan === planId ? 'Текущий план' : 
                    planId === 'free' ? 'Недоступно' : 
-                   loading ? 'Загрузка...' : 'Выбрать план (тест)'}
+                   loading ? 'Загрузка...' : 'Выбрать план'}
                 </Button>
               </CardContent>
             </Card>

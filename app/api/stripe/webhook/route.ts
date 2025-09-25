@@ -36,15 +36,34 @@ export async function POST(request: NextRequest) {
           const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
           const customerId = session.customer as string
           
-          // Обновляем план пользователя
-          const planId = await getPlanIdFromPriceId(subscription.items.data[0].price.id)
-          
-          await supabase
+          // Получаем пользователя по customer ID
+          const { data: user } = await supabase
             .from('users')
-            .update({ plan: planId })
+            .select('id')
             .eq('stripe_customer_id', customerId)
+            .single()
           
-          console.log(`User ${customerId} upgraded to ${planId}`)
+          if (user) {
+            const planId = await getPlanIdFromPriceId(subscription.items.data[0].price.id)
+            
+            // Создаем или обновляем запись подписки
+            await supabase
+              .from('subscriptions')
+              .upsert({
+                user_id: user.id,
+                stripe_subscription_id: subscription.id,
+                stripe_customer_id: customerId,
+                plan: planId,
+                status: subscription.status,
+                current_period_start: new Date((subscription as any).current_period_start * 1000),
+                current_period_end: new Date((subscription as any).current_period_end * 1000),
+                cancel_at_period_end: (subscription as any).cancel_at_period_end
+              }, {
+                onConflict: 'stripe_subscription_id'
+              })
+            
+            console.log(`User ${customerId} upgraded to ${planId}`)
+          }
         }
         break
       }
@@ -53,18 +72,31 @@ export async function POST(request: NextRequest) {
         const subscription = event.data.object as Stripe.Subscription
         const customerId = subscription.customer as string
         
-        if (subscription.status === 'active') {
+        // Получаем пользователя по customer ID
+        const { data: user } = await supabase
+          .from('users')
+          .select('id')
+          .eq('stripe_customer_id', customerId)
+          .single()
+        
+        if (user) {
           const planId = await getPlanIdFromPriceId(subscription.items.data[0].price.id)
           
+          // Обновляем запись подписки
           await supabase
-            .from('users')
-            .update({ plan: planId })
-            .eq('stripe_customer_id', customerId)
-        } else if (subscription.status === 'canceled' || subscription.status === 'unpaid') {
-          await supabase
-            .from('users')
-            .update({ plan: 'free' })
-            .eq('stripe_customer_id', customerId)
+            .from('subscriptions')
+            .upsert({
+              user_id: user.id,
+              stripe_subscription_id: subscription.id,
+              stripe_customer_id: customerId,
+              plan: planId,
+              status: subscription.status,
+              current_period_start: new Date((subscription as any).current_period_start * 1000),
+              current_period_end: new Date((subscription as any).current_period_end * 1000),
+              cancel_at_period_end: (subscription as any).cancel_at_period_end
+            }, {
+              onConflict: 'stripe_subscription_id'
+            })
         }
         
         console.log(`Subscription updated for customer ${customerId}: ${subscription.status}`)
@@ -75,10 +107,23 @@ export async function POST(request: NextRequest) {
         const subscription = event.data.object as Stripe.Subscription
         const customerId = subscription.customer as string
         
-        await supabase
+        // Получаем пользователя по customer ID
+        const { data: user } = await supabase
           .from('users')
-          .update({ plan: 'free' })
+          .select('id')
           .eq('stripe_customer_id', customerId)
+          .single()
+        
+        if (user) {
+          // Обновляем статус подписки на canceled
+          await supabase
+            .from('subscriptions')
+            .update({ 
+              status: 'canceled',
+              updated_at: new Date()
+            })
+            .eq('stripe_subscription_id', subscription.id)
+        }
         
         console.log(`Subscription canceled for customer ${customerId}`)
         break
