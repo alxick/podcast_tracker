@@ -25,6 +25,8 @@ export default function SearchPage() {
       if (response.ok) {
         const data = await response.json()
         setTrackingPodcasts(data.podcasts.map((p: { podcast_id: string }) => p.podcast_id))
+      } else {
+        console.error('Failed to load tracking podcasts:', response.status, response.statusText)
       }
     } catch (error) {
       console.error('Error loading tracking podcasts:', error)
