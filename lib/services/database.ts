@@ -33,12 +33,6 @@ export async function savePodcast(podcast: Omit<Podcast, 'id' | 'created_at'>) {
 export async function getPodcast(id: string) {
   const supabase = await createClient()
   
-  // Проверяем, является ли ID валидным UUID
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-  if (!uuidRegex.test(id)) {
-    throw new Error('Invalid UUID format')
-  }
-  
   const { data, error } = await supabase
     .from('podcasts')
     .select('*')
@@ -187,23 +181,35 @@ export async function userExists(userId: string) {
   return !error && data
 }
 
-// Добавление подкаста в отслеживание пользователя
-export async function addUserPodcast(userId: string, podcastId: string) {
-  const supabase = await createClient()
-  
-  // Сначала пытаемся найти подкаст по source_id (если передан числовой ID)
+// Универсальный поиск подкаста по любому ID
+async function findPodcastById(podcastId: string) {
+  // Сначала пытаемся найти по source_id (Spotify/Apple ID)
   let podcast = await getPodcastBySource('spotify', podcastId)
   if (!podcast) {
     podcast = await getPodcastBySource('apple', podcastId)
   }
   
-  // Если не найден по source_id, пытаемся найти по UUID (только если это валидный UUID)
+  // Если не найден по source_id, пытаемся найти по UUID
   if (!podcast) {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     if (uuidRegex.test(podcastId)) {
-      podcast = await getPodcast(podcastId)
+      try {
+        podcast = await getPodcast(podcastId)
+      } catch (error) {
+        // Игнорируем ошибки UUID, продолжаем поиск
+        console.log('UUID search failed, continuing...')
+      }
     }
   }
+  
+  return podcast
+}
+
+// Добавление подкаста в отслеживание пользователя
+export async function addUserPodcast(userId: string, podcastId: string) {
+  const supabase = await createClient()
+  
+  const podcast = await findPodcastById(podcastId)
   
   if (!podcast) {
     throw new Error('Podcast not found')
@@ -249,19 +255,7 @@ export async function addUserPodcast(userId: string, podcastId: string) {
 export async function removeUserPodcast(userId: string, podcastId: string) {
   const supabase = await createClient()
   
-  // Сначала пытаемся найти подкаст по source_id (если передан числовой ID)
-  let podcast = await getPodcastBySource('spotify', podcastId)
-  if (!podcast) {
-    podcast = await getPodcastBySource('apple', podcastId)
-  }
-  
-  // Если не найден по source_id, пытаемся найти по UUID (только если это валидный UUID)
-  if (!podcast) {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-    if (uuidRegex.test(podcastId)) {
-      podcast = await getPodcast(podcastId)
-    }
-  }
+  const podcast = await findPodcastById(podcastId)
   
   if (!podcast) {
     throw new Error('Podcast not found')
