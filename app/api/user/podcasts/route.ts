@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof Error) {
       if (error.message === 'Podcast not found') {
         return NextResponse.json(
-          { error: 'Подкаст не найден в базе данных' },
+          { error: 'Подкаст не найден в базе данных. Попробуйте найти его снова.' },
           { status: 404 }
         )
       }
@@ -103,14 +103,42 @@ export async function POST(request: NextRequest) {
       }
       if (error.message === 'Failed to add user podcast') {
         return NextResponse.json(
-          { error: 'Ошибка при добавлении подкаста в отслеживание' },
+          { error: 'Ошибка базы данных при добавлении подкаста' },
+          { status: 500 }
+        )
+      }
+      if (error.message === 'Invalid user or podcast ID') {
+        return NextResponse.json(
+          { error: 'Неверный ID пользователя или подкаста' },
+          { status: 400 }
+        )
+      }
+      if (error.message === 'Invalid data format') {
+        return NextResponse.json(
+          { error: 'Неверный формат данных' },
+          { status: 400 }
+        )
+      }
+      if (error.message.startsWith('Database error:')) {
+        return NextResponse.json(
+          { error: `Ошибка базы данных: ${error.message.replace('Database error: ', '')}` },
           { status: 500 }
         )
       }
     }
     
+    // Логируем полную ошибку для отладки
+    console.error('Unexpected error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      error
+    })
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: `Ошибка сервера: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,
+        details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : String(error)) : undefined
+      },
       { status: 500 }
     )
   }

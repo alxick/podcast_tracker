@@ -29,9 +29,15 @@ export async function savePodcast(podcast: Omit<Podcast, 'id' | 'created_at'>) {
   return data
 }
 
-// Получение подкаста по ID
+// Получение подкаста по ID (UUID)
 export async function getPodcast(id: string) {
   const supabase = await createClient()
+  
+  // Проверяем, является ли ID валидным UUID
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (!uuidRegex.test(id)) {
+    throw new Error('Invalid UUID format')
+  }
   
   const { data, error } = await supabase
     .from('podcasts')
@@ -220,7 +226,17 @@ export async function addUserPodcast(userId: string, podcastId: string) {
   
   if (error) {
     console.error('Error adding user podcast:', error)
-    throw new Error('Failed to add user podcast')
+    
+    // Более детальные ошибки
+    if (error.code === '23505') { // Unique constraint violation
+      throw new Error('Podcast already being tracked')
+    } else if (error.code === '23503') { // Foreign key violation
+      throw new Error('Invalid user or podcast ID')
+    } else if (error.code === '23514') { // Check constraint violation
+      throw new Error('Invalid data format')
+    } else {
+      throw new Error(`Database error: ${error.message}`)
+    }
   }
   
   return data
