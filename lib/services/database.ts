@@ -185,9 +185,24 @@ export async function userExists(userId: string) {
 export async function addUserPodcast(userId: string, podcastId: string) {
   const supabase = await createClient()
   
+  // Сначала пытаемся найти подкаст по source_id (если передан числовой ID)
+  let podcast = await getPodcastBySource('spotify', podcastId)
+  if (!podcast) {
+    podcast = await getPodcastBySource('apple', podcastId)
+  }
+  
+  // Если не найден по source_id, пытаемся найти по UUID
+  if (!podcast) {
+    podcast = await getPodcast(podcastId)
+  }
+  
+  if (!podcast) {
+    throw new Error('Podcast not found')
+  }
+  
   const { data, error } = await supabase
     .from('user_podcasts')
-    .insert({ user_id: userId, podcast_id: podcastId })
+    .insert({ user_id: userId, podcast_id: podcast.id })
     .select()
     .single()
   
@@ -203,11 +218,26 @@ export async function addUserPodcast(userId: string, podcastId: string) {
 export async function removeUserPodcast(userId: string, podcastId: string) {
   const supabase = await createClient()
   
+  // Сначала пытаемся найти подкаст по source_id (если передан числовой ID)
+  let podcast = await getPodcastBySource('spotify', podcastId)
+  if (!podcast) {
+    podcast = await getPodcastBySource('apple', podcastId)
+  }
+  
+  // Если не найден по source_id, пытаемся найти по UUID
+  if (!podcast) {
+    podcast = await getPodcast(podcastId)
+  }
+  
+  if (!podcast) {
+    throw new Error('Podcast not found')
+  }
+  
   const { error } = await supabase
     .from('user_podcasts')
     .delete()
     .eq('user_id', userId)
-    .eq('podcast_id', podcastId)
+    .eq('podcast_id', podcast.id)
   
   if (error) {
     console.error('Error removing user podcast:', error)
