@@ -1,8 +1,8 @@
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2025-08-27.basil',
-})
+}) : null
 
 export const subscriptionPlans = {
   free: {
@@ -86,6 +86,10 @@ export const subscriptionPlans = {
 
 // Создание Stripe customer
 export async function createCustomer(email: string, name?: string) {
+  if (!stripe) {
+    throw new Error('Stripe not configured')
+  }
+  
   try {
     const customer = await stripe.customers.create({
       email,
@@ -105,6 +109,10 @@ export async function createCheckoutSession(
   successUrl: string,
   cancelUrl: string
 ) {
+  if (!stripe) {
+    throw new Error('Stripe not configured')
+  }
+  
   try {
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -128,6 +136,10 @@ export async function createCheckoutSession(
 
 // Создание billing portal session
 export async function createBillingPortalSession(customerId: string, returnUrl: string) {
+  if (!stripe) {
+    throw new Error('Stripe not configured')
+  }
+  
   try {
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
@@ -142,6 +154,10 @@ export async function createBillingPortalSession(customerId: string, returnUrl: 
 
 // Получение subscription
 export async function getSubscription(subscriptionId: string) {
+  if (!stripe) {
+    throw new Error('Stripe not configured')
+  }
+  
   try {
     const subscription = await stripe.subscriptions.retrieve(subscriptionId)
     return subscription
@@ -153,6 +169,10 @@ export async function getSubscription(subscriptionId: string) {
 
 // Отмена subscription
 export async function cancelSubscription(subscriptionId: string) {
+  if (!stripe) {
+    throw new Error('Stripe not configured')
+  }
+  
   try {
     const subscription = await stripe.subscriptions.cancel(subscriptionId)
     return subscription
@@ -164,6 +184,10 @@ export async function cancelSubscription(subscriptionId: string) {
 
 // Получение всех products и prices
 export async function getProducts() {
+  if (!stripe) {
+    throw new Error('Stripe not configured')
+  }
+  
   try {
     const products = await stripe.products.list({
       active: true,
@@ -182,6 +206,10 @@ export async function getProducts() {
 
 // Создание price для плана
 export async function createPrice(planId: string) {
+  if (!stripe) {
+    throw new Error('Stripe not configured')
+  }
+  
   try {
     const plan = subscriptionPlans[planId as keyof typeof subscriptionPlans]
     if (!plan || plan.price === 0) {

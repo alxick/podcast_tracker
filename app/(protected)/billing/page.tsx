@@ -11,6 +11,7 @@ import { SubscriptionPlan } from '@/lib/types/database'
 export default function BillingPage() {
   const [loading, setLoading] = useState(false)
   const [currentPlan, setCurrentPlan] = useState('free')
+  const [stripeConfigured, setStripeConfigured] = useState(true)
   const { user } = useAuth()
 
   useEffect(() => {
@@ -18,44 +19,30 @@ export default function BillingPage() {
       // В реальном приложении получаем план из БД
       setCurrentPlan('free')
     }
+    
+    // Проверяем, настроен ли Stripe
+    setStripeConfigured(!!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
   }, [user])
 
   const handleUpgrade = async (planId: string) => {
     if (planId === 'free') return
 
     setLoading(true)
-    try {
-      const response = await fetch('/api/stripe/create-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId }),
-      })
-
-      if (response.ok) {
-        const { sessionId } = await response.json()
-        
-        // Перенаправляем на Stripe Checkout
-        const stripe = await import('@stripe/stripe-js')
-        const stripeInstance = await stripe.loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
-        
-        if (stripeInstance) {
-          const { error } = await stripeInstance.redirectToCheckout({ sessionId })
-          if (error) {
-            console.error('Stripe checkout error:', error)
-          }
-        }
-      } else {
-        const errorData = await response.json()
-        console.error('API error:', errorData.error)
-      }
-    } catch (error) {
-      console.error('Error creating checkout session:', error)
-    } finally {
+    
+    // Заглушка для тестирования - просто меняем план
+    setTimeout(() => {
+      setCurrentPlan(planId)
       setLoading(false)
-    }
+      alert(`План "${subscriptionPlans[planId as keyof typeof subscriptionPlans]?.name}" выбран! (Заглушка для тестирования)`)
+    }, 1000)
   }
 
   const handleManageBilling = async () => {
+    if (!stripeConfigured) {
+      alert('Управление подпиской доступно только с настроенным Stripe (режим тестирования)')
+      return
+    }
+    
     try {
       const response = await fetch('/api/stripe/create-portal', {
         method: 'POST',
@@ -84,6 +71,17 @@ export default function BillingPage() {
         </p>
       </div>
 
+      {!stripeConfigured && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h3 className="text-blue-800 font-medium mb-2">
+            🧪 Режим тестирования
+          </h3>
+          <p className="text-blue-700 text-sm">
+            Stripe не настроен. Планы можно выбирать для тестирования интерфейса. Для реальных платежей настройте Stripe API ключи.
+          </p>
+        </div>
+      )}
+
       <div className="grid gap-6">
         <Card>
           <CardHeader>
@@ -103,8 +101,12 @@ export default function BillingPage() {
                 </p>
               </div>
               {currentPlan !== 'free' && (
-                <Button variant="outline" onClick={handleManageBilling}>
-                  Управлять подпиской
+                <Button 
+                  variant="outline" 
+                  onClick={handleManageBilling}
+                  disabled={!stripeConfigured}
+                >
+                  {stripeConfigured ? 'Управлять подпиской' : 'Только для тестирования'}
                 </Button>
               )}
             </div>
@@ -145,7 +147,7 @@ export default function BillingPage() {
                 >
                   {currentPlan === planId ? 'Текущий план' : 
                    planId === 'free' ? 'Недоступно' : 
-                   loading ? 'Загрузка...' : 'Выбрать план'}
+                   loading ? 'Загрузка...' : 'Выбрать план (тест)'}
                 </Button>
               </CardContent>
             </Card>
