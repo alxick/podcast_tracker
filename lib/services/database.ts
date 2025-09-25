@@ -197,9 +197,12 @@ export async function addUserPodcast(userId: string, podcastId: string) {
     podcast = await getPodcastBySource('apple', podcastId)
   }
   
-  // Если не найден по source_id, пытаемся найти по UUID
+  // Если не найден по source_id, пытаемся найти по UUID (только если это валидный UUID)
   if (!podcast) {
-    podcast = await getPodcast(podcastId)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (uuidRegex.test(podcastId)) {
+      podcast = await getPodcast(podcastId)
+    }
   }
   
   if (!podcast) {
@@ -252,9 +255,12 @@ export async function removeUserPodcast(userId: string, podcastId: string) {
     podcast = await getPodcastBySource('apple', podcastId)
   }
   
-  // Если не найден по source_id, пытаемся найти по UUID
+  // Если не найден по source_id, пытаемся найти по UUID (только если это валидный UUID)
   if (!podcast) {
-    podcast = await getPodcast(podcastId)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (uuidRegex.test(podcastId)) {
+      podcast = await getPodcast(podcastId)
+    }
   }
   
   if (!podcast) {
