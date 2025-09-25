@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { 
+  getNotificationSettings, 
+  updateNotificationSettings,
+  createDefaultNotificationSettings 
+} from '@/lib/services/notifications'
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,32 +18,18 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const { data: settings } = await supabase
-      .from('notification_settings')
-      .select('*')
-      .eq('user_id', user.id)
-      .single()
+    const settings = await getNotificationSettings(user.id)
 
     if (!settings) {
-      // Создаем настройки по умолчанию
-      const { data: newSettings } = await supabase
-        .from('notification_settings')
-        .insert({
-          user_id: user.id,
-          email_notifications: true,
-          telegram_notifications: false,
-          daily_digest: true,
-          instant_alerts: false
-        })
-        .select()
-        .single()
-
-      return NextResponse.json({ settings: newSettings })
+      return NextResponse.json(
+        { error: 'Failed to get notification settings' },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json({ settings })
   } catch (error) {
-    console.error('Error getting notification settings:', error)
+    console.error('Get notification settings error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -58,23 +49,39 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const { email_notifications, telegram_notifications, daily_digest, instant_alerts } = await request.json()
+    const body = await request.json()
+    const { email_frequency, notification_types } = body
 
-    const { data: settings } = await supabase
-      .from('notification_settings')
-      .upsert({
-        user_id: user.id,
-        email_notifications: email_notifications ?? true,
-        telegram_notifications: telegram_notifications ?? false,
-        daily_digest: daily_digest ?? true,
-        instant_alerts: instant_alerts ?? false
-      })
-      .select()
-      .single()
+    // Валидация
+    if (email_frequency && !['instant', 'daily', 'weekly'].includes(email_frequency)) {
+      return NextResponse.json(
+        { error: 'Invalid email frequency' },
+        { status: 400 }
+      )
+    }
 
-    return NextResponse.json({ settings })
+    if (notification_types) {
+      const validTypes = ['position_changes', 'new_episodes', 'competitor_actions', 'trends']
+      const invalidTypes = Object.keys(notification_types).filter(
+        key => !validTypes.includes(key) || typeof notification_types[key] !== 'boolean'
+      )
+      
+      if (invalidTypes.length > 0) {
+        return NextResponse.json(
+          { error: 'Invalid notification types' },
+          { status: 400 }
+        )
+      }
+    }
+
+    const updatedSettings = await updateNotificationSettings(user.id, {
+      email_frequency,
+      notification_types
+    })
+
+    return NextResponse.json({ settings: updatedSettings })
   } catch (error) {
-    console.error('Error updating notification settings:', error)
+    console.error('Update notification settings error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

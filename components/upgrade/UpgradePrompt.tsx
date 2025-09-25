@@ -101,7 +101,7 @@ export function UpgradePrompt({ currentPlan, feature, onUpgrade }: UpgradePrompt
           <div>
             <h5 className="font-medium mb-2">Включено в план:</h5>
             <ul className="text-sm space-y-1">
-              {planConfig.features.slice(0, 3).map((feature, index) => (
+              {planConfig.features.slice(0, 3).map((feature: string, index: number) => (
                 <li key={index} className="flex items-center gap-2">
                   <span className="text-green-600">✓</span>
                   {feature}

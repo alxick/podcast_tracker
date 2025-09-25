@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getUserPodcasts, addUserPodcast, removeUserPodcast, createUser, userExists } from '@/lib/services/database'
+import { checkSubscriptionLimits, incrementUsageCounter } from '@/lib/middleware/subscription-limits'
 
 export async function GET(request: NextRequest) {
   try {
@@ -50,6 +51,20 @@ export async function POST(request: NextRequest) {
       await createUser(user.id, user.email || '')
     }
 
+    // Проверяем лимиты подписки
+    const { allowed, limits, error: limitError } = await checkSubscriptionLimits(request, 'track_podcast')
+    
+    if (!allowed) {
+      return NextResponse.json(
+        { 
+          error: limitError || 'Action not allowed',
+          limits,
+          upgradeRequired: true
+        },
+        { status: 403 }
+      )
+    }
+
     const { podcastId } = await request.json()
 
     if (!podcastId) {
@@ -61,7 +76,14 @@ export async function POST(request: NextRequest) {
 
     const result = await addUserPodcast(user.id, podcastId)
 
-    return NextResponse.json({ success: true, data: result })
+    // Увеличиваем счетчик использования
+    await incrementUsageCounter(user.id, 'track_podcast')
+
+    return NextResponse.json({ 
+      success: true, 
+      data: result,
+      limits: limits
+    })
   } catch (error) {
     console.error('Add user podcast error:', error)
     return NextResponse.json(

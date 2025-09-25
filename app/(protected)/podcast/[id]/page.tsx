@@ -12,6 +12,7 @@ import { Podcast, Episode } from '@/lib/types/database'
 import { ChartGraph } from '@/components/podcast/ChartGraph'
 import { EpisodesList } from '@/components/podcast/EpisodesList'
 import { CoverAnalysis } from '@/components/podcast/CoverAnalysis'
+import { AIAnalysis } from '@/components/podcast/AIAnalysis'
 
 export default function PodcastDetailPage() {
   const params = useParams()
@@ -176,7 +177,10 @@ export default function PodcastDetailPage() {
         </TabsContent>
         
         <TabsContent value="analysis">
-          <CoverAnalysis podcast={podcast} />
+          <div className="space-y-6">
+            <AIAnalysis podcastId={podcast.id} podcastTitle={podcast.title} />
+            <CoverAnalysis podcast={podcast} />
+          </div>
         </TabsContent>
       </Tabs>
     </div>

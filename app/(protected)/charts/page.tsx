@@ -18,6 +18,7 @@ interface ChartPodcast {
   description?: string
   image_url?: string
   category: string
+  platform: string
   position: number
   rss_url?: string
 }
@@ -111,7 +112,7 @@ export default function ChartsPage() {
               <div>
                 <p className="text-sm font-medium mb-2">Категория:</p>
                 <div className="flex flex-wrap gap-2">
-                  {categories.map((category) => (
+                  {categories.map((category: { id: string; name: string }) => (
                     <Button
                       key={category.id}
                       variant={selectedCategory === category.id ? 'default' : 'outline'}
@@ -168,7 +169,7 @@ export default function ChartsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {charts.map((podcast) => (
+                    {charts.map((podcast: ChartPodcast) => (
                       <TableRow key={podcast.id}>
                         <TableCell className="font-semibold">
                           {podcast.position}

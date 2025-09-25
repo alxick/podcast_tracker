@@ -149,10 +149,10 @@ function parseRSSFeed(xmlText: string, limit: number) {
       episodes.push({
         id: `episode_${count}`,
         title: cleanText(title),
-        description: cleanText(description),
+        description: cleanText(description || ''),
         published_at: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
-        duration: parseDuration(duration),
-        audio_url: extractEnclosureUrl(enclosure),
+        duration: parseDuration(duration || ''),
+        audio_url: extractEnclosureUrl(enclosure || ''),
       })
       count++
     }

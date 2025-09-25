@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { subscriptionPlans } from '@/lib/services/stripe'
+import { SubscriptionPlan } from '@/lib/types/database'
 
 export default function BillingPage() {
   const [loading, setLoading] = useState(false)
@@ -111,7 +112,7 @@ export default function BillingPage() {
         </Card>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {Object.entries(subscriptionPlans).map(([planId, plan]) => (
+          {Object.entries(subscriptionPlans).map(([planId, plan]: [string, SubscriptionPlan]) => (
             <Card 
               key={planId} 
               className={currentPlan === planId ? 'border-blue-500 bg-blue-50' : ''}
@@ -129,7 +130,7 @@ export default function BillingPage() {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2 text-sm mb-6">
-                  {plan.features.map((feature, index) => (
+                  {plan.features.map((feature: string, index: number) => (
                     <li key={index} className="flex items-center gap-2">
                       <span className="text-green-600">✓</span>
                       {feature}

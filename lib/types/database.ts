@@ -50,10 +50,13 @@ export interface UserPodcast {
 export interface NotificationSettings {
   id: string
   user_id: string
-  email_notifications: boolean
-  telegram_notifications: boolean
-  daily_digest: boolean
-  instant_alerts: boolean
+  email_frequency: 'instant' | 'daily' | 'weekly'
+  notification_types: {
+    position_changes: boolean
+    new_episodes: boolean
+    competitor_actions: boolean
+    trends: boolean
+  }
   created_at: string
 }
 

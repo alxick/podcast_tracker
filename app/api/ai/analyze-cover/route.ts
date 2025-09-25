@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import { checkSubscriptionLimits, incrementUsageCounter } from '@/lib/middleware/subscription-limits'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -7,6 +8,20 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
+    // Проверяем лимиты подписки
+    const { allowed, limits, error: limitError } = await checkSubscriptionLimits(request, 'ai_analysis')
+    
+    if (!allowed) {
+      return NextResponse.json(
+        { 
+          error: limitError || 'Action not allowed',
+          limits,
+          upgradeRequired: true
+        },
+        { status: 403 }
+      )
+    }
+
     const { imageUrl, podcastTitle } = await request.json()
 
     if (!imageUrl) {
@@ -119,7 +134,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ analysis })
+    // Увеличиваем счетчик использования
+    const supabase = await import('@/lib/supabase/server').then(m => m.createClient())
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      await incrementUsageCounter(user.id, 'ai_analysis')
+    }
+
+    return NextResponse.json({ 
+      analysis,
+      limits: limits
+    })
   } catch (error) {
     console.error('Error analyzing cover:', error)
     

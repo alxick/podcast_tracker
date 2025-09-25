@@ -15,9 +15,9 @@ export async function updateCharts() {
         const charts = await getCharts('apple', category, 50)
         
         if (charts.length > 0) {
-          const chartPositions = charts.map((chart, index) => ({
+          const chartPositions = charts.map((chart: { id: string; category?: string }, index: number) => ({
             podcast_id: chart.id,
-            platform: 'apple',
+            platform: 'apple' as const,
             category: chart.category || 'General',
             position: index + 1,
             date: new Date().toISOString().split('T')[0],
@@ -37,9 +37,9 @@ export async function updateCharts() {
       const charts = await getCharts('spotify', undefined, 50)
       
       if (charts.length > 0) {
-        const chartPositions = charts.map((chart, index) => ({
+        const chartPositions = charts.map((chart: { id: string; category?: string }, index: number) => ({
           podcast_id: chart.id,
-          platform: 'spotify',
+          platform: 'spotify' as const,
           category: chart.category || 'General',
           position: index + 1,
           date: new Date().toISOString().split('T')[0],

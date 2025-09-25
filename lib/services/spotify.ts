@@ -53,7 +53,7 @@ export async function searchPodcasts(query: string, limit = 20, country: string 
     
     const data = await response.json()
     
-    return data.shows?.items.map((show: any) => ({
+    return data.shows?.items.map((show: { id: string; name: string; description: string; images: Array<{ url: string }>; publisher: string; genres?: string[]; external_urls?: { spotify: string } }) => ({
       id: show.id,
       source: 'spotify' as const,
       source_id: show.id,
@@ -88,7 +88,7 @@ export async function getPodcastDetails(showId: string) {
       author: show.publisher,
       description: show.description,
       image_url: show.images?.[0]?.url,
-      category: show.genres?.[0],
+      category: (show as any).genres?.[0],
       rss_url: show.external_urls?.spotify,
       total_episodes: show.total_episodes,
       languages: show.languages,
@@ -107,7 +107,7 @@ export async function getPodcastEpisodes(showId: string, limit = 50) {
     
     const data = await spotifyApi.getShowEpisodes(showId, { limit })
     
-    return data.body.items.map(episode => ({
+    return data.body.items.map((episode: { id: string; name: string; description: string; release_date: string; duration_ms: number; external_urls: { spotify: string }; images?: Array<{ url: string }> }) => ({
       id: episode.id,
       title: episode.name,
       description: episode.description,
@@ -129,7 +129,7 @@ export async function getPodcastCategories() {
     
     const data = await spotifyApi.getCategories()
     
-    return data.body.categories.items.map(category => ({
+    return data.body.categories.items.map((category: { id: string; name: string }) => ({
       id: category.id,
       name: category.name,
     }))

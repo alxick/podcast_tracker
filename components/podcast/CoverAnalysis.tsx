@@ -143,7 +143,7 @@ export function CoverAnalysis({ podcast }: CoverAnalysisProps) {
                 <div>
                   <p className="text-sm font-medium mb-2">Цветовая палитра:</p>
                   <div className="flex gap-2">
-                    {analysis.colors.palette.map((color, index) => (
+                    {analysis.colors.palette.map((color: string, index: number) => (
                       <div
                         key={index}
                         className="w-6 h-6 rounded border"
@@ -210,7 +210,7 @@ export function CoverAnalysis({ podcast }: CoverAnalysisProps) {
             </CardHeader>
             <CardContent>
               <ul className="space-y-2">
-                {analysis.recommendations.map((recommendation, index) => (
+                {analysis.recommendations.map((recommendation: string, index: number) => (
                   <li key={index} className="flex items-start gap-2">
                     <span className="text-blue-600 mt-1">•</span>
                     <span className="text-sm">{recommendation}</span>

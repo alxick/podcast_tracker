@@ -6,9 +6,10 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { UsageLimits } from '@/components/ui/usage-limits'
 import Image from 'next/image'
 
-interface UserPodcast {
+interface UserPodcastWithDetails {
   id: string
   podcast_id: string
   podcasts: {
@@ -23,15 +24,27 @@ interface UserPodcast {
   }
 }
 
+interface UsageLimitsData {
+  podcasts_tracked: number
+  ai_analyses_used: number
+  charts_accessed: number
+  max_podcasts: number
+  max_ai_analyses: number
+  max_charts: number
+  plan: string
+}
+
 export default function DashboardPage() {
-  const [podcasts, setPodcasts] = useState<UserPodcast[]>([])
+  const [podcasts, setPodcasts] = useState<UserPodcastWithDetails[]>([])
   const [loading, setLoading] = useState(true)
+  const [limits, setLimits] = useState<UsageLimitsData | null>(null)
   const { user } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
     if (user) {
       loadUserPodcasts()
+      loadUsageLimits()
     }
   }, [user])
 
@@ -49,6 +62,18 @@ export default function DashboardPage() {
     }
   }
 
+  const loadUsageLimits = async () => {
+    try {
+      const response = await fetch('/api/user/limits')
+      if (response.ok) {
+        const data = await response.json()
+        setLimits(data.limits)
+      }
+    } catch (error) {
+      console.error('Error loading usage limits:', error)
+    }
+  }
+
   const handleRemovePodcast = async (podcastId: string) => {
     try {
       const response = await fetch(`/api/user/podcasts?podcastId=${podcastId}`, {
@@ -57,6 +82,8 @@ export default function DashboardPage() {
       
       if (response.ok) {
         setPodcasts(prev => prev.filter(p => p.podcast_id !== podcastId))
+        // Reload limits after removing podcast
+        loadUsageLimits()
       }
     } catch (error) {
       console.error('Error removing podcast:', error)
@@ -86,6 +113,14 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-6">
+        {/* Usage Limits */}
+        {limits && (
+          <UsageLimits 
+            limits={limits} 
+            onUpgrade={() => router.push('/billing')}
+          />
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle>Отслеживаемые подкасты</CardTitle>
@@ -105,7 +140,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {podcasts.map((userPodcast) => (
+                {podcasts.map((userPodcast: UserPodcastWithDetails) => (
                   <div key={userPodcast.id} className="flex items-center gap-4 p-4 border rounded-lg">
                     <div className="flex-shrink-0">
                       {userPodcast.podcasts.image_url ? (

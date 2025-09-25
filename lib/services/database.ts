@@ -213,6 +213,28 @@ export async function removeUserPodcast(userId: string, podcastId: string) {
     console.error('Error removing user podcast:', error)
     throw new Error('Failed to remove user podcast')
   }
+
+  // Уменьшаем счетчик отслеживаемых подкастов
+  // Сначала получаем текущее значение
+  const { data: userData, error: fetchError } = await supabase
+    .from('users')
+    .select('podcasts_tracked')
+    .eq('id', userId)
+    .single()
+
+  if (!fetchError && userData) {
+    const newCount = Math.max((userData.podcasts_tracked || 0) - 1, 0)
+    
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ podcasts_tracked: newCount })
+      .eq('id', userId)
+
+    if (updateError) {
+      console.error('Error updating podcast count:', updateError)
+      // Не выбрасываем ошибку, так как основная операция прошла успешно
+    }
+  }
 }
 
 // Получение отслеживаемых подкастов пользователя

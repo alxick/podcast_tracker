@@ -1,13 +1,13 @@
 import { subscriptionPlans } from '@/lib/services/stripe'
 
-export interface SubscriptionLimits {
+export interface SubscriptionPlanLimits {
   podcasts: number
   charts: number
   ai_analysis: boolean
   api_access: boolean
 }
 
-export function getSubscriptionLimits(plan: string): SubscriptionLimits {
+export function getSubscriptionLimits(plan: string): SubscriptionPlanLimits {
   const planConfig = subscriptionPlans[plan as keyof typeof subscriptionPlans]
   
   if (!planConfig) {

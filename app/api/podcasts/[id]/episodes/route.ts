@@ -32,7 +32,7 @@ export async function GET(
       )
     }
 
-    let episodes = []
+    let episodes: Array<{ title: string; published_at: string; duration?: number; description?: string; audio_url?: string }> = []
 
     // Если запрошено обновление или нет эпизодов в БД
     if (refresh || episodes.length === 0) {
@@ -45,7 +45,7 @@ export async function GET(
 
         // Сохраняем эпизоды в БД
         if (episodes.length > 0) {
-          const episodesToSave = episodes.map(episode => ({
+          const episodesToSave = episodes.map((episode: { title: string; published_at: string; duration?: number; description?: string; audio_url?: string }) => ({
             podcast_id: podcast.id,
             title: episode.title,
             published_at: episode.published_at,

@@ -40,7 +40,7 @@ export function Sidebar() {
         <ul role="list" className="flex flex-1 flex-col gap-y-7">
           <li>
             <ul role="list" className="-mx-2 space-y-1">
-              {navigation.map((item) => {
+              {navigation.map((item: { name: string; href: string; icon: React.ComponentType<{ className?: string }> }) => {
                 const isActive = pathname === item.href
                 return (
                   <li key={item.name}>

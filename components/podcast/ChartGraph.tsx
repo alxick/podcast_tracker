@@ -3,9 +3,12 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
+import { Download, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 
 interface ChartGraphProps {
   podcastId: string
@@ -22,6 +25,8 @@ export function ChartGraph({ podcastId }: ChartGraphProps) {
   const [chartData, setChartData] = useState<ChartData[]>([])
   const [loading, setLoading] = useState(true)
   const [days, setDays] = useState(30)
+  const [selectedPlatform, setSelectedPlatform] = useState<string>('all')
+  const [trend, setTrend] = useState<{ direction: 'up' | 'down' | 'stable', change: number } | null>(null)
 
   useEffect(() => {
     loadChartData()
@@ -34,12 +39,65 @@ export function ChartGraph({ podcastId }: ChartGraphProps) {
       if (response.ok) {
         const data = await response.json()
         setChartData(data.history)
+        calculateTrend(data.history)
       }
     } catch (error) {
       console.error('Error loading chart data:', error)
     } finally {
       setLoading(false)
     }
+  }
+
+  const calculateTrend = (data: ChartData[]) => {
+    if (data.length < 2) {
+      setTrend(null)
+      return
+    }
+
+    const firstPosition = data[0].position
+    const lastPosition = data[data.length - 1].position
+    const change = firstPosition - lastPosition
+
+    if (Math.abs(change) < 2) {
+      setTrend({ direction: 'stable', change: 0 })
+    } else if (change > 0) {
+      setTrend({ direction: 'up', change })
+    } else {
+      setTrend({ direction: 'down', change: Math.abs(change) })
+    }
+  }
+
+  const exportData = () => {
+    const csvContent = [
+      ['Date', 'Position', 'Platform', 'Category'],
+      ...chartData.map((item: { date: string; position: number; platform: string; category: string }) => [
+        item.date,
+        item.position.toString(),
+        item.platform,
+        item.category
+      ])
+    ].map((row: string[]) => row.join(',')).join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `podcast-chart-data-${podcastId}-${days}days.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+  }
+
+  const getFilteredData = () => {
+    if (selectedPlatform === 'all') {
+      return chartData
+    }
+    return chartData.filter(item => item.platform === selectedPlatform)
+  }
+
+  const getUniquePlatforms = () => {
+    return Array.from(new Set(chartData.map((item: { platform: string }) => item.platform)))
   }
 
   const formatDate = (dateString: string) => {
@@ -58,7 +116,7 @@ export function ChartGraph({ podcastId }: ChartGraphProps) {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-3 border rounded-lg shadow-lg">
-          <p className="font-semibold">{formatDate(label)}</p>
+          <p className="font-semibold">{formatDate(label || '')}</p>
           <p className="text-blue-600">
             Позиция: {payload[0].value}
           </p>
@@ -105,11 +163,41 @@ export function ChartGraph({ podcastId }: ChartGraphProps) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Позиции в чартах</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              Позиции в чартах
+              {trend && (
+                <Badge 
+                  variant={trend.direction === 'up' ? 'default' : trend.direction === 'down' ? 'destructive' : 'secondary'}
+                  className="flex items-center gap-1"
+                >
+                  {trend.direction === 'up' && <TrendingUp className="h-3 w-3" />}
+                  {trend.direction === 'down' && <TrendingDown className="h-3 w-3" />}
+                  {trend.direction === 'stable' && <Minus className="h-3 w-3" />}
+                  {trend.direction === 'up' && `+${trend.change}`}
+                  {trend.direction === 'down' && `-${trend.change}`}
+                  {trend.direction === 'stable' && 'Стабильно'}
+                </Badge>
+              )}
+            </CardTitle>
             <CardDescription>
               История позиций подкаста за последние {days} дней
             </CardDescription>
           </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportData}
+              disabled={chartData.length === 0}
+            >
+              <Download className="h-4 w-4 mr-1" />
+              Экспорт
+            </Button>
+          </div>
+        </div>
+        
+        {/* Filters */}
+        <div className="flex gap-4 mt-4">
           <div className="flex gap-2">
             <Button
               variant={days === 7 ? 'default' : 'outline'}
@@ -133,12 +221,26 @@ export function ChartGraph({ podcastId }: ChartGraphProps) {
               90 дней
             </Button>
           </div>
+          
+          <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Платформа" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Все платформы</SelectItem>
+              {getUniquePlatforms().map((platform: string) => (
+                <SelectItem key={platform} value={platform}>
+                  {platform === 'spotify' ? 'Spotify' : 'Apple Podcasts'}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </CardHeader>
       <CardContent>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
+            <LineChart data={getFilteredData()}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
                 dataKey="date" 

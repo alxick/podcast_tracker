@@ -59,7 +59,7 @@ export const emailTemplates = {
         <h1 style="color: #3b82f6;">📊 Ежедневный дайджест</h1>
         <p>Вот что произошло с вашими подкастами за последние 24 часа:</p>
         
-        ${data.podcasts.map(podcast => `
+        ${data.podcasts.map((podcast: { title: string; positionChange: number; newEpisodes: number }) => `
           <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 16px 0;">
             <h3 style="margin: 0 0 8px 0; color: #1f2937;">${podcast.title}</h3>
             ${podcast.positionChange !== 0 ? `
@@ -83,7 +83,7 @@ export const emailTemplates = {
         </div>
       </div>
     `,
-    text: `Ежедневный дайджест Podcast Tracker\n\n${data.podcasts.map(p => 
+    text: `Ежедневный дайджест Podcast Tracker\n\n${data.podcasts.map((p: { title: string; positionChange: number; newEpisodes: number }) => 
       `${p.title}: позиция ${p.positionChange > 0 ? '+' : ''}${p.positionChange}, новых эпизодов: ${p.newEpisodes}`
     ).join('\n')}`
   }),

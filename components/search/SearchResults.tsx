@@ -86,7 +86,7 @@ export function SearchResults({
       </div>
       
       <div className="grid gap-4">
-        {results.map((podcast) => {
+        {results.map((podcast: Podcast) => {
           const isTracking = trackingPodcasts.includes(podcast.id)
           const isAdding = addingPodcasts.has(podcast.id)
           

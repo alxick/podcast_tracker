@@ -1,236 +1,331 @@
-import { createClient } from '@/lib/supabase/server'
-import { sendEmail, emailTemplates } from './email'
-import { getPodcastChartHistory, getUserPodcasts } from './database'
+import { createServiceRoleClient } from '@/lib/supabase/server'
+import { sendEmail } from './email'
+import { PositionChange } from './ai-analysis'
+import { NotificationSettings } from '@/lib/types/database'
 
-// Отправка ежедневного дайджеста
-export async function sendDailyDigest() {
-  try {
-    const supabase = await createClient()
-    
-    // Получаем всех пользователей с включенными уведомлениями
-    const { data: users, error } = await supabase
-      .from('notification_settings')
-      .select(`
-        user_id,
-        users!inner(email)
-      `)
-      .eq('daily_digest', true)
-      .eq('email_notifications', true)
+// Получение настроек уведомлений пользователя
+export async function getNotificationSettings(userId: string): Promise<NotificationSettings | null> {
+  const supabase = createServiceRoleClient()
+  
+  const { data, error } = await supabase
+    .from('notification_settings')
+    .select('*')
+    .eq('user_id', userId)
+    .single()
 
-    if (error) {
-      console.error('Error fetching users for daily digest:', error)
-      return
+  if (error) {
+    if (error.code === 'PGRST116') {
+      // Настройки не найдены, создаем дефолтные
+      return await createDefaultNotificationSettings(userId)
     }
-
-    if (!users || users.length === 0) {
-      console.log('No users with daily digest enabled')
-      return
-    }
-
-    for (const user of users) {
-      try {
-        // Получаем отслеживаемые подкасты пользователя
-        const userPodcasts = await getUserPodcasts(user.user_id)
-        
-        if (userPodcasts.length === 0) {
-          continue
-        }
-
-        // Анализируем изменения за последние 24 часа
-        const digestData = {
-          podcasts: await Promise.all(
-            userPodcasts.map(async (userPodcast) => {
-              const podcast = userPodcast.podcasts
-              
-              // Получаем историю позиций за последние 2 дня
-              const history = await getPodcastChartHistory(podcast.id, 2)
-              
-              // Вычисляем изменение позиции
-              let positionChange = 0
-              if (history.length >= 2) {
-                const today = history[history.length - 1]
-                const yesterday = history[history.length - 2]
-                positionChange = yesterday.position - today.position
-              }
-              
-              // Подсчитываем новые эпизоды (заглушка)
-              const newEpisodes = Math.floor(Math.random() * 3) // Mock data
-              
-              return {
-                title: podcast.title,
-                positionChange,
-                newEpisodes
-              }
-            })
-          )
-        }
-
-        // Отправляем дайджест
-        const template = emailTemplates.dailyDigest(user.users.email, digestData)
-        await sendEmail(template)
-        
-        console.log(`Daily digest sent to ${user.users.email}`)
-      } catch (error) {
-        console.error(`Error sending daily digest to user ${user.user_id}:`, error)
-      }
-    }
-  } catch (error) {
-    console.error('Error in sendDailyDigest:', error)
+    console.error('Error getting notification settings:', error)
+    return null
   }
+
+  return data
 }
 
-// Отправка уведомления о значительном изменении позиции
-export async function sendPositionAlert(userId: string, podcastId: string, oldPosition: number, newPosition: number) {
-  try {
-    const supabase = await createClient()
-    
-    // Получаем настройки пользователя
-    const { data: settings, error: settingsError } = await supabase
-      .from('notification_settings')
-      .select('instant_alerts, email_notifications')
-      .eq('user_id', userId)
-      .single()
-
-    if (settingsError) {
-      console.error('Error fetching user settings:', settingsError)
-      return
+// Создание дефолтных настроек уведомлений
+export async function createDefaultNotificationSettings(userId: string): Promise<NotificationSettings> {
+  const supabase = createServiceRoleClient()
+  
+  const defaultSettings: Omit<NotificationSettings, 'id' | 'created_at'> = {
+    user_id: userId,
+    email_frequency: 'weekly',
+    notification_types: {
+      position_changes: true,
+      new_episodes: false,
+      competitor_actions: false,
+      trends: false
     }
-
-    if (!settings?.instant_alerts || !settings?.email_notifications) {
-      return
-    }
-
-    // Получаем email пользователя
-    const { data: user } = await supabase
-      .from('users')
-      .select('email')
-      .eq('id', userId)
-      .single()
-
-    if (!user) {
-      return
-    }
-
-    // Получаем информацию о подкасте
-    const { data: podcast } = await supabase
-      .from('podcasts')
-      .select('title')
-      .eq('id', podcastId)
-      .single()
-
-    if (!podcast) {
-      return
-    }
-
-    const change = oldPosition - newPosition
-    
-    // Отправляем уведомление только при значительном изменении (>5 позиций)
-    if (Math.abs(change) >= 5) {
-      const template = emailTemplates.positionAlert(user.email, {
-        podcastTitle: podcast.title,
-        oldPosition,
-        newPosition,
-        change
-      })
-      
-      await sendEmail(template)
-      console.log(`Position alert sent to ${user.email} for ${podcast.title}`)
-    }
-  } catch (error) {
-    console.error('Error sending position alert:', error)
   }
-}
 
-// Отправка уведомления о новом эпизоде
-export async function sendNewEpisodeAlert(userId: string, podcastId: string, episode: {
-  title: string
-  published_at: string
-}) {
-  try {
-    const supabase = await createClient()
-    
-    // Получаем настройки пользователя
-    const { data: settings, error: settingsError } = await supabase
-      .from('notification_settings')
-      .select('email_notifications')
-      .eq('user_id', userId)
-      .single()
-
-    if (settingsError) {
-      console.error('Error fetching user settings:', settingsError)
-      return
-    }
-
-    if (!settings?.email_notifications) {
-      return
-    }
-
-    // Получаем email пользователя
-    const { data: user } = await supabase
-      .from('users')
-      .select('email')
-      .eq('id', userId)
-      .single()
-
-    if (!user) {
-      return
-    }
-
-    // Получаем информацию о подкасте
-    const { data: podcast } = await supabase
-      .from('podcasts')
-      .select('title')
-      .eq('id', podcastId)
-      .single()
-
-    if (!podcast) {
-      return
-    }
-
-    const template = emailTemplates.newEpisode(user.email, {
-      podcastTitle: podcast.title,
-      episodeTitle: episode.title,
-      publishedAt: episode.published_at
+  const { data, error } = await supabase
+    .from('notification_settings')
+    .insert({
+      ...defaultSettings,
+      created_at: new Date().toISOString()
     })
-    
-    await sendEmail(template)
-    console.log(`New episode alert sent to ${user.email} for ${podcast.title}`)
-  } catch (error) {
-    console.error('Error sending new episode alert:', error)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error creating notification settings:', error)
+    throw new Error('Failed to create notification settings')
+  }
+
+  return data
+}
+
+// Обновление настроек уведомлений
+export async function updateNotificationSettings(
+  userId: string, 
+  settings: Partial<Omit<NotificationSettings, 'user_id' | 'created_at'>>
+): Promise<NotificationSettings> {
+  const supabase = createServiceRoleClient()
+  
+  const { data, error } = await supabase
+    .from('notification_settings')
+    .update(settings)
+    .eq('user_id', userId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating notification settings:', error)
+    throw new Error('Failed to update notification settings')
+  }
+
+  return data
+}
+
+// Проверка изменений позиций и отправка уведомлений
+export async function checkPositionChanges(): Promise<void> {
+  const supabase = createServiceRoleClient()
+  
+  // Получаем всех пользователей с настройками уведомлений
+  const { data: users, error: usersError } = await supabase
+    .from('notification_settings')
+    .select(`
+      user_id,
+      email_frequency,
+      notification_types,
+      users!inner(email)
+    `)
+    .eq('notification_types->position_changes', true)
+
+  if (usersError) {
+    console.error('Error getting users for notifications:', usersError)
+    return
+  }
+
+  for (const user of users) {
+    try {
+      // Получаем отслеживаемые подкасты пользователя
+      const { data: userPodcasts, error: podcastsError } = await supabase
+        .from('user_podcasts')
+        .select(`
+          podcast_id,
+          podcasts!inner(title, source, source_id)
+        `)
+        .eq('user_id', user.user_id)
+
+      if (podcastsError) {
+        console.error(`Error getting podcasts for user ${user.user_id}:`, podcastsError)
+        continue
+      }
+
+      // Проверяем изменения позиций для каждого подкаста
+      const positionChanges: PositionChange[] = []
+      
+      for (const userPodcast of userPodcasts) {
+        const changes = await checkPodcastPositionChanges(
+          userPodcast.podcast_id,
+          userPodcast.podcasts?.[0]?.source || 'unknown',
+          userPodcast.podcasts?.[0]?.source_id || ''
+        )
+        positionChanges.push(...changes)
+      }
+
+      // Отправляем уведомления если есть изменения
+      if (positionChanges.length > 0) {
+        await sendPositionChangeNotification(
+          user.users?.[0]?.email || '',
+          positionChanges,
+          user.email_frequency
+        )
+      }
+
+    } catch (error) {
+      console.error(`Error processing notifications for user ${user.user_id}:`, error)
+    }
   }
 }
 
-// Отправка приветственного письма
-export async function sendWelcomeEmail(userId: string) {
+// Проверка изменений позиций для конкретного подкаста
+async function checkPodcastPositionChanges(
+  podcastId: string,
+  source: 'spotify' | 'apple',
+  sourceId: string
+): Promise<PositionChange[]> {
+  const supabase = createServiceRoleClient()
+  
+  // Получаем последние 2 позиции для каждого подкаста
+  const { data: recentPositions, error } = await supabase
+    .from('charts')
+    .select('position, platform, category, date, podcasts!inner(title)')
+    .eq('podcast_id', podcastId)
+    .eq('platform', source)
+    .order('date', { ascending: false })
+    .limit(2)
+
+  if (error || !recentPositions || recentPositions.length < 2) {
+    return []
+  }
+
+  const [current, previous] = recentPositions
+  const change = previous.position - current.position // positive = moved up
+
+  // Отправляем уведомление только если изменение значительное (3+ позиций)
+  if (Math.abs(change) >= 3) {
+    return [{
+      podcast_id: podcastId,
+      podcast_title: current.podcasts?.[0]?.title || 'Unknown',
+      old_position: previous.position,
+      new_position: current.position,
+      change,
+      platform: source,
+      category: current.category,
+      date: current.date
+    }]
+  }
+
+  return []
+}
+
+// Отправка email уведомления об изменениях позиций
+async function sendPositionChangeNotification(
+  email: string,
+  changes: PositionChange[],
+  frequency: string
+): Promise<void> {
   try {
-    const supabase = await createClient()
+    const subject = `Podcast Position Changes - ${changes.length} update${changes.length > 1 ? 's' : ''}`
     
-    // Получаем email пользователя
+    // Группируем изменения по типу
+    const improvements = changes.filter(c => c.change > 0)
+    const declines = changes.filter(c => c.change < 0)
+
+    let htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">📈 Podcast Position Updates</h2>
+        <p>Here are the latest changes to your tracked podcasts:</p>
+    `
+
+    if (improvements.length > 0) {
+      htmlContent += `
+        <div style="background-color: #f0f9ff; padding: 15px; border-radius: 8px; margin: 15px 0;">
+          <h3 style="color: #059669; margin: 0 0 10px 0;">🚀 Improvements</h3>
+          ${improvements.map((change: PositionChange) => `
+            <div style="margin: 10px 0; padding: 10px; background: white; border-radius: 5px;">
+              <strong>${change.podcast_title}</strong><br>
+              <span style="color: #059669;">
+                ${change.old_position} → ${change.new_position} 
+                (+${change.change} positions)
+              </span><br>
+              <small style="color: #666;">
+                ${change.platform} • ${change.category} • ${change.date}
+              </small>
+            </div>
+          `).join('')}
+        </div>
+      `
+    }
+
+    if (declines.length > 0) {
+      htmlContent += `
+        <div style="background-color: #fef2f2; padding: 15px; border-radius: 8px; margin: 15px 0;">
+          <h3 style="color: #dc2626; margin: 0 0 10px 0;">📉 Declines</h3>
+          ${declines.map((change: PositionChange) => `
+            <div style="margin: 10px 0; padding: 10px; background: white; border-radius: 5px;">
+              <strong>${change.podcast_title}</strong><br>
+              <span style="color: #dc2626;">
+                ${change.old_position} → ${change.new_position} 
+                (${change.change} positions)
+              </span><br>
+              <small style="color: #666;">
+                ${change.platform} • ${change.category} • ${change.date}
+              </small>
+            </div>
+          `).join('')}
+        </div>
+      `
+    }
+
+    htmlContent += `
+        <div style="margin-top: 20px; padding: 15px; background-color: #f8fafc; border-radius: 8px;">
+          <p style="margin: 0; color: #64748b;">
+            <strong>💡 Pro Tip:</strong> Check your podcast's performance regularly and consider 
+            analyzing what your competitors are doing differently.
+          </p>
+        </div>
+        
+        <div style="margin-top: 20px; text-align: center;">
+          <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard" 
+             style="background-color: #3b82f6; color: white; padding: 10px 20px; 
+                    text-decoration: none; border-radius: 5px; display: inline-block;">
+            View Dashboard
+          </a>
+        </div>
+      </div>
+    `
+
+    await sendEmail({
+      to: email,
+      subject,
+      html: htmlContent
+    })
+
+    console.log(`Position change notification sent to ${email}`)
+  } catch (error) {
+    console.error(`Error sending position change notification to ${email}:`, error)
+  }
+}
+
+// Отправка приветственного email
+export async function sendWelcomeEmail(userId: string): Promise<void> {
+  try {
+    const supabase = createServiceRoleClient()
+    
     const { data: user, error } = await supabase
       .from('users')
       .select('email')
       .eq('id', userId)
       .single()
 
-    if (error) {
-      console.error('Error fetching user for welcome email:', error)
+    if (error || !user) {
+      console.error('Error getting user for welcome email:', error)
       return
     }
 
-    if (!user) {
-      console.warn('User not found for welcome email:', userId)
-      return
-    }
+    await sendEmail({
+      to: user.email,
+      subject: 'Добро пожаловать в Podcast Tracker!',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">🎉 Добро пожаловать в Podcast Tracker!</h2>
+          <p>Спасибо за регистрацию! Теперь вы можете:</p>
+          <ul>
+            <li>📊 Отслеживать позиции ваших подкастов в чартах</li>
+            <li>🤖 Получать AI-анализ причин изменений</li>
+            <li>🔔 Настраивать уведомления о росте</li>
+            <li>📈 Анализировать конкурентов</li>
+          </ul>
+          <div style="margin-top: 20px; text-align: center;">
+            <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard" 
+               style="background-color: #3b82f6; color: white; padding: 10px 20px; 
+                      text-decoration: none; border-radius: 5px; display: inline-block;">
+              Начать работу
+            </a>
+          </div>
+        </div>
+      `
+    })
 
-    const template = emailTemplates.welcome(user.email)
-    const result = await sendEmail(template)
-    
-    if (result.success) {
-      console.log(`Welcome email sent to ${user.email}`)
-    } else {
-      console.error(`Failed to send welcome email to ${user.email}:`, result.error)
-    }
+    console.log(`Welcome email sent to ${user.email}`)
   } catch (error) {
     console.error('Error sending welcome email:', error)
+  }
+}
+
+// Планировщик уведомлений (вызывается cron job)
+export async function processScheduledNotifications(): Promise<void> {
+  console.log('Processing scheduled notifications...')
+  
+  try {
+    await checkPositionChanges()
+    console.log('Scheduled notifications processed successfully')
+  } catch (error) {
+    console.error('Error processing scheduled notifications:', error)
   }
 }

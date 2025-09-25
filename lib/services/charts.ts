@@ -1,4 +1,5 @@
 // Сервис для работы с чартами подкастов
+import { Podcast } from '@/lib/types/database'
 
 // Получение топ-чартов Apple Podcasts
 export async function getAppleCharts(category: string = '1310', limit = 50, country: string = 'ru') {
@@ -81,7 +82,7 @@ export async function getSpotifyCharts(limit = 50, country: string = 'US') {
     )
     
     // Добавляем позиции
-    const podcastsWithPositions = uniquePodcasts.slice(0, limit).map((podcast, index) => ({
+    const podcastsWithPositions = uniquePodcasts.slice(0, limit).map((podcast: Podcast, index: number) => ({
       ...podcast,
       position: index + 1,
     }))
