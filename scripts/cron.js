@@ -3,7 +3,7 @@
 const https = require('https')
 const http = require('http')
 
-const CRON_URL = process.env.CRON_URL || 'http://localhost:3000/api/cron/update'
+const BASE_URL = process.env.CRON_URL || 'http://localhost:3000/api/cron'
 const CRON_SECRET = process.env.CRON_SECRET_TOKEN
 
 if (!CRON_SECRET) {
@@ -11,9 +11,22 @@ if (!CRON_SECRET) {
   process.exit(1)
 }
 
+// Получаем тип задачи из аргументов командной строки
+const taskType = process.argv[2] || 'update'
+
+const TASK_URLS = {
+  'update': '/update',
+  'charts': '/charts',
+  'episodes': '/episodes',
+  'notifications': '/notifications'
+}
+
+const CRON_URL = `${BASE_URL}${TASK_URLS[taskType] || TASK_URLS.update}`
+
 async function runCronJob() {
   try {
-    console.log('Running cron job...')
+    console.log(`Running cron job: ${taskType}...`)
+    console.log(`URL: ${CRON_URL}`)
     
     const url = new URL(CRON_URL)
     const options = {
@@ -38,22 +51,25 @@ async function runCronJob() {
       
       res.on('end', () => {
         if (res.statusCode === 200) {
-          console.log('Cron job completed successfully')
+          console.log(`${taskType} cron job completed successfully`)
           console.log('Response:', data)
         } else {
-          console.error('Cron job failed with status:', res.statusCode)
+          console.error(`${taskType} cron job failed with status:`, res.statusCode)
           console.error('Response:', data)
+          process.exit(1)
         }
       })
     })
     
     req.on('error', (error) => {
-      console.error('Error running cron job:', error)
+      console.error(`Error running ${taskType} cron job:`, error)
+      process.exit(1)
     })
     
     req.end()
   } catch (error) {
-    console.error('Cron job error:', error)
+    console.error(`${taskType} cron job error:`, error)
+    process.exit(1)
   }
 }
 
