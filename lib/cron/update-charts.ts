@@ -1,6 +1,7 @@
 import { getCharts } from '@/lib/services/charts'
 import { saveChartPositions, getPodcastChartHistory } from '@/lib/services/database'
 import { processScheduledNotifications } from '@/lib/services/notifications'
+import { runMonthlyReset } from '@/lib/cron/reset-counters'
 
 // Обновление чартов
 export async function updateCharts() {
@@ -172,6 +173,9 @@ export async function runCronJob() {
   const startTime = Date.now()
   
   try {
+    // Проверяем и сбрасываем счетчики (если нужно)
+    await runMonthlyReset()
+    
     // Обновляем чарты
     await updateCharts()
     

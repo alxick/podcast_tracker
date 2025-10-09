@@ -90,6 +90,30 @@ export default function DashboardPage() {
     }
   }
 
+  const handleExport = async (type: string) => {
+    try {
+      const response = await fetch(`/api/export/data?type=${type}&format=csv`)
+      
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `my-${type}.csv`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+      } else {
+        const errorData = await response.json()
+        alert(errorData.error || 'Export failed')
+      }
+    } catch (error) {
+      console.error('Export error:', error)
+      alert('Export failed')
+    }
+  }
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -228,6 +252,13 @@ export default function DashboardPage() {
                 onClick={() => router.push('/notifications')}
               >
                 ⚙️ Настройки уведомлений
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => handleExport('podcasts')}
+              >
+                📊 Экспорт данных
               </Button>
             </CardContent>
           </Card>

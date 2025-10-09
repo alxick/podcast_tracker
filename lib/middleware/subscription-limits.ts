@@ -105,27 +105,27 @@ function getPlanLimits(plan: string): Omit<SubscriptionLimits, 'podcasts_tracked
   switch (plan) {
     case 'free':
       return {
-        max_podcasts: 3,
-        max_ai_analyses: 1,
-        max_charts: 10
+        max_podcasts: 1, // 1 подкаст
+        max_ai_analyses: 1, // 1 AI анализ навсегда
+        max_charts: 10 // топ-10 чартов
       }
     case 'starter':
       return {
-        max_podcasts: 10,
-        max_ai_analyses: 10,
-        max_charts: 50
+        max_podcasts: 5, // 5 подкастов
+        max_ai_analyses: 10, // 10 AI анализов в месяц
+        max_charts: 50 // топ-50 чартов
       }
     case 'pro':
       return {
-        max_podcasts: 50,
-        max_ai_analyses: 999999, // Unlimited
-        max_charts: 999999 // Unlimited
+        max_podcasts: 20, // 20 подкастов
+        max_ai_analyses: 999999, // Безлимитные AI анализы
+        max_charts: 999999 // Все чарты
       }
     case 'agency':
       return {
-        max_podcasts: 999999, // Unlimited
-        max_ai_analyses: 999999, // Unlimited
-        max_charts: 999999 // Unlimited
+        max_podcasts: 999999, // Безлимитные подкасты
+        max_ai_analyses: 999999, // Безлимитные AI анализы
+        max_charts: 999999 // Все чарты + API
       }
     default:
       return {
