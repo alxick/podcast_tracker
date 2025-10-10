@@ -82,8 +82,8 @@ export async function updateEpisodes() {
   
   try {
     const { createServiceRoleClient } = await import('@/lib/supabase/server')
-    const { getSpotifyEpisodes, getAppleEpisodes } = await import('@/lib/services/spotify')
-    const { getApplePodcastEpisodes } = await import('@/lib/services/apple')
+    const { getPodcastEpisodes: getSpotifyEpisodes } = await import('@/lib/services/spotify')
+    const { getPodcastEpisodes: getAppleEpisodes } = await import('@/lib/services/apple')
     
     const supabase = createServiceRoleClient()
     
@@ -125,7 +125,7 @@ export async function updateEpisodes() {
         if (podcast.source === 'spotify') {
           newEpisodes = await getSpotifyEpisodes(podcast.source_id)
         } else if (podcast.source === 'apple') {
-          newEpisodes = await getApplePodcastEpisodes(podcast.source_id)
+          newEpisodes = await getAppleEpisodes(podcast.source_id)
         }
 
         if (newEpisodes.length > 0) {

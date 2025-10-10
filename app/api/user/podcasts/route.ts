@@ -3,6 +3,14 @@ import { createClient } from '@/lib/supabase/server'
 import { getUserPodcasts, addUserPodcast, removeUserPodcast, createUser, userExists } from '@/lib/services/database'
 import { checkSubscriptionLimits, incrementUsageCounter } from '@/lib/middleware/subscription-limits'
 
+// Вспомогательная функция для проверки и создания пользователя
+async function ensureUserExists(userId: string, email: string) {
+  const exists = await userExists(userId)
+  if (!exists) {
+    await createUser(userId, email)
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -16,10 +24,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Проверяем, существует ли пользователь в БД, если нет - создаем
-    const exists = await userExists(user.id)
-    if (!exists) {
-      await createUser(user.id, user.email || '')
-    }
+    await ensureUserExists(user.id, user.email || '')
 
     const podcasts = await getUserPodcasts(user.id)
 
@@ -46,10 +51,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Проверяем, существует ли пользователь в БД, если нет - создаем
-    const exists = await userExists(user.id)
-    if (!exists) {
-      await createUser(user.id, user.email || '')
-    }
+    await ensureUserExists(user.id, user.email || '')
 
     // Проверяем лимиты подписки
     const { allowed, limits, error: limitError } = await checkSubscriptionLimits(request, 'track_podcast')

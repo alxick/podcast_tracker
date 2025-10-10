@@ -1,36 +1,34 @@
 'use client'
 
-import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from './AuthProvider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
+import { useForm } from '@/lib/hooks/useForm'
 
 export function LoginForm() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
   const { signIn } = useAuth()
   const router = useRouter()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-
-    const { error } = await signIn(email, password)
-    
-    if (error) {
-      setError(error.message)
-    } else {
-      router.push('/dashboard')
+  const form = useForm({
+    initialValues: { email: '', password: '' },
+    onSubmit: async (values) => {
+      const { error } = await signIn(values.email, values.password)
+      if (error) {
+        throw new Error(error.message)
+      } else {
+        router.push('/dashboard')
+      }
+    },
+    validate: (values) => {
+      if (!values.email) return 'Email is required'
+      if (!values.password) return 'Password is required'
+      if (!/\S+@\S+\.\S+/.test(values.email)) return 'Email is invalid'
+      return null
     }
-    
-    setLoading(false)
-  }
+  })
 
   return (
     <Card className="w-full max-w-md">
@@ -41,10 +39,10 @@ export function LoginForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
+        <form onSubmit={form.handleSubmit} className="space-y-4">
+          {form.error && (
             <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
-              {error}
+              {form.error}
             </div>
           )}
           
@@ -55,11 +53,11 @@ export function LoginForm() {
             <Input
               id="email"
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={form.values.email}
+              onChange={(e) => form.setValue('email', e.target.value)}
               placeholder="your@email.com"
               required
-              disabled={loading}
+              disabled={form.loading}
             />
           </div>
           
@@ -70,16 +68,16 @@ export function LoginForm() {
             <Input
               id="password"
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={form.values.password}
+              onChange={(e) => form.setValue('password', e.target.value)}
               placeholder="••••••••"
               required
-              disabled={loading}
+              disabled={form.loading}
             />
           </div>
           
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Вход...' : 'Войти'}
+          <Button type="submit" className="w-full" disabled={form.loading}>
+            {form.loading ? 'Вход...' : 'Войти'}
           </Button>
         </form>
         

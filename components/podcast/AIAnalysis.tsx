@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -16,6 +15,7 @@ import {
   AlertTriangle
 } from 'lucide-react'
 import { AIAnalysisResult } from '@/lib/services/ai-analysis'
+import { useAIAnalysis } from '@/lib/hooks/useApi'
 
 interface AIAnalysisProps {
   podcastId: string
@@ -23,38 +23,14 @@ interface AIAnalysisProps {
 }
 
 export function AIAnalysis({ podcastId, podcastTitle }: AIAnalysisProps) {
-  const [analysis, setAnalysis] = useState<AIAnalysisResult | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { data: analysis, loading, error, runAnalysis } = useAIAnalysis()
 
-  const runAnalysis = async () => {
-    setLoading(true)
-    setError(null)
-
+  const handleRunAnalysis = async () => {
     try {
-      const response = await fetch('/api/ai/analyze-position-changes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ podcastId }),
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setAnalysis(data.analysis)
-      } else {
-        const errorData = await response.json()
-        if (errorData.upgradeRequired) {
-          setError('Upgrade your plan to access AI analysis')
-        } else {
-          setError(errorData.error || 'Failed to analyze position changes')
-        }
-      }
-    } catch (err) {
-      setError('Failed to analyze position changes')
-    } finally {
-      setLoading(false)
+      const result = await runAnalysis(podcastId)
+      // Анализ уже сохранен в состоянии хука
+    } catch (error) {
+      // Ошибка уже обработана в хуке
     }
   }
 
@@ -79,7 +55,7 @@ export function AIAnalysis({ podcastId, podcastTitle }: AIAnalysisProps) {
             <CardTitle>AI Анализ причин изменений</CardTitle>
           </div>
           <Button 
-            onClick={runAnalysis}
+            onClick={handleRunAnalysis}
             disabled={loading}
             className="bg-purple-600 hover:bg-purple-700"
           >

@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Podcast } from '@/lib/types/database'
 import Image from 'next/image'
+import { useCoverAnalysis } from '@/lib/hooks/useApi'
 
 interface CoverAnalysisProps {
   podcast: Podcast
@@ -28,40 +28,17 @@ interface AnalysisResult {
 }
 
 export function CoverAnalysis({ podcast }: CoverAnalysisProps) {
-  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const { data: analysis, loading, error, analyzeCover } = useCoverAnalysis()
 
-  const analyzeCover = async () => {
+  const handleAnalyzeCover = async () => {
     if (!podcast.image_url) {
-      setError('Обложка недоступна для анализа')
       return
     }
 
-    setLoading(true)
-    setError('')
-
     try {
-      const response = await fetch('/api/ai/analyze-cover', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          imageUrl: podcast.image_url,
-          podcastTitle: podcast.title 
-        }),
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setAnalysis(data.analysis)
-      } else {
-        setError('Ошибка при анализе обложки')
-      }
+      await analyzeCover(podcast.image_url, podcast.title)
     } catch (error) {
-      console.error('Error analyzing cover:', error)
-      setError('Ошибка при анализе обложки')
-    } finally {
-      setLoading(false)
+      // Ошибка уже обработана в хуке
     }
   }
 
@@ -105,7 +82,7 @@ export function CoverAnalysis({ podcast }: CoverAnalysisProps) {
               </p>
               
               <Button 
-                onClick={analyzeCover} 
+                onClick={handleAnalyzeCover} 
                 disabled={loading}
                 className="mb-4"
               >
