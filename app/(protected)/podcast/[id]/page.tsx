@@ -11,7 +11,7 @@ import Image from 'next/image'
 import { Podcast, Episode } from '@/lib/types/database'
 import { ChartGraph } from '@/components/podcast/ChartGraph'
 import { EpisodesList } from '@/components/podcast/EpisodesList'
-import { CoverAnalysis } from '@/components/podcast/CoverAnalysis'
+import { TrendAnalysis } from '@/components/podcast/TrendAnalysis'
 import { AIAnalysis } from '@/components/podcast/AIAnalysis'
 
 export default function PodcastDetailPage() {
@@ -179,7 +179,7 @@ export default function PodcastDetailPage() {
         <TabsContent value="analysis">
           <div className="space-y-6">
             <AIAnalysis podcastId={podcast.id} podcastTitle={podcast.title} />
-            <CoverAnalysis podcast={podcast} />
+            <TrendAnalysis podcast={podcast} />
           </div>
         </TabsContent>
       </Tabs>

@@ -4,39 +4,31 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Podcast } from '@/lib/types/database'
-import Image from 'next/image'
-import { useCoverAnalysis } from '@/lib/hooks/useApi'
+import { useTrendAnalysis } from '@/lib/hooks/useApi'
 
-interface CoverAnalysisProps {
+interface TrendAnalysisProps {
   podcast: Podcast
 }
 
-interface AnalysisResult {
-  colors: {
-    dominant: string
-    palette: string[]
-  }
-  text: {
-    hasText: boolean
-    textContent?: string
-  }
-  style: {
-    brightness: 'dark' | 'medium' | 'bright'
-    contrast: 'low' | 'medium' | 'high'
-  }
+interface TrendAnalysisResult {
+  trending_topics: string[]
+  seasonal_patterns: string[]
+  competitor_moves: string[]
+  opportunity_alerts: string[]
   recommendations: string[]
+  confidence: number
 }
 
-export function CoverAnalysis({ podcast }: CoverAnalysisProps) {
-  const { data: analysis, loading, error, analyzeCover } = useCoverAnalysis()
+export function TrendAnalysis({ podcast }: TrendAnalysisProps) {
+  const { data: analysis, loading, error, analyzeTrends } = useTrendAnalysis()
 
-  const handleAnalyzeCover = async () => {
-    if (!podcast.image_url) {
+  const handleAnalyzeTrends = async () => {
+    if (!podcast.category) {
       return
     }
 
     try {
-      await analyzeCover(podcast.image_url, podcast.title)
+      await analyzeTrends(podcast.id, podcast.category)
     } catch (error) {
       // Ошибка уже обработана в хуке
     }

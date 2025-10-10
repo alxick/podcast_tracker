@@ -83,28 +83,28 @@ export function useAIAnalysis() {
   }
 }
 
-// Специализированный хук для анализа обложек
-export function useCoverAnalysis() {
+// Специализированный хук для анализа трендов (вместо анализа обложек)
+export function useTrendAnalysis() {
   const api = useApi({
     onError: (error) => {
-      console.error('Cover analysis error:', error)
+      console.error('Trend analysis error:', error)
     }
   })
 
-  const analyzeCover = useCallback(async (imageUrl: string, podcastTitle: string) => {
+  const analyzeTrends = useCallback(async (podcastId: string, category: string) => {
     return api.execute(
-      () => fetch('/api/ai/analyze-cover', {
+      () => fetch('/api/ai/analyze-trends', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageUrl, podcastTitle })
+        body: JSON.stringify({ podcastId, category })
       }),
-      'Failed to analyze cover'
+      'Failed to analyze trends'
     )
   }, [api])
 
   return {
     ...api,
-    analyzeCover
+    analyzeTrends
   }
 }
 
