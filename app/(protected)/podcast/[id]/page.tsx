@@ -13,6 +13,8 @@ import { ChartGraph } from '@/components/podcast/ChartGraph'
 import { EpisodesList } from '@/components/podcast/EpisodesList'
 import { TrendAnalysis } from '@/components/podcast/TrendAnalysis'
 import { AIAnalysis } from '@/components/podcast/AIAnalysis'
+import { AdvancedAIAnalysis } from '@/components/podcast/AdvancedAIAnalysis'
+import { QualityMonitoring } from '@/components/podcast/QualityMonitoring'
 
 export default function PodcastDetailPage() {
   const params = useParams()
@@ -169,7 +171,7 @@ export default function PodcastDetailPage() {
         </TabsList>
         
         <TabsContent value="episodes">
-          <EpisodesList episodes={episodes} />
+          <EpisodesList episodes={episodes} podcastId={podcast.id} />
         </TabsContent>
         
         <TabsContent value="charts">
@@ -180,6 +182,10 @@ export default function PodcastDetailPage() {
           <div className="space-y-6">
             <AIAnalysis podcastId={podcast.id} podcastTitle={podcast.title} />
             <TrendAnalysis podcast={podcast} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <AdvancedAIAnalysis podcast={podcast} />
+              <QualityMonitoring podcast={podcast} />
+            </div>
           </div>
         </TabsContent>
       </Tabs>

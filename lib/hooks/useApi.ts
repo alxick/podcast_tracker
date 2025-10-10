@@ -108,6 +108,131 @@ export function useTrendAnalysis() {
   }
 }
 
+// Специализированный хук для анализа контента
+export function useContentAnalysis() {
+  const api = useApi({
+    onError: (error) => {
+      console.error('Content analysis error:', error)
+    }
+  })
+
+  const analyzeContent = useCallback(async (episodeId: string, podcastId: string) => {
+    return api.execute(
+      () => fetch('/api/ai/analyze-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ episodeId, podcastId })
+      }),
+      'Failed to analyze content'
+    )
+  }, [api])
+
+  return {
+    ...api,
+    analyzeContent
+  }
+}
+
+// Специализированный хук для анализа трендов эпизодов
+export function useEpisodeTrends() {
+  const api = useApi({
+    onError: (error) => {
+      console.error('Episode trends error:', error)
+    }
+  })
+
+  const analyzeEpisodeTrends = useCallback(async (podcastId: string, timeRange: number = 30) => {
+    return api.execute(
+      () => fetch('/api/ai/analyze-episode-trends', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ podcastId, timeRange })
+      }),
+      'Failed to analyze episode trends'
+    )
+  }, [api])
+
+  return {
+    ...api,
+    analyzeEpisodeTrends
+  }
+}
+
+// Специализированный хук для сравнения с конкурентами
+export function useCompetitorComparison() {
+  const api = useApi({
+    onError: (error) => {
+      console.error('Competitor comparison error:', error)
+    }
+  })
+
+  const analyzeCompetitorComparison = useCallback(async (podcastId: string, category: string) => {
+    return api.execute(
+      () => fetch('/api/ai/analyze-competitor-comparison', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ podcastId, category })
+      }),
+      'Failed to analyze competitor comparison'
+    )
+  }, [api])
+
+  return {
+    ...api,
+    analyzeCompetitorComparison
+  }
+}
+
+// Специализированный хук для прогнозирования успеха
+export function useEpisodeSuccessPrediction() {
+  const api = useApi({
+    onError: (error) => {
+      console.error('Episode success prediction error:', error)
+    }
+  })
+
+  const predictEpisodeSuccess = useCallback(async (episodeId: string, podcastId: string, episodeData?: any) => {
+    return api.execute(
+      () => fetch('/api/ai/predict-episode-success', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ episodeId, podcastId, episodeData })
+      }),
+      'Failed to predict episode success'
+    )
+  }, [api])
+
+  return {
+    ...api,
+    predictEpisodeSuccess
+  }
+}
+
+// Специализированный хук для мониторинга качества
+export function useQualityMonitoring() {
+  const api = useApi({
+    onError: (error) => {
+      console.error('Quality monitoring error:', error)
+    }
+  })
+
+  const checkQualityAlerts = useCallback(async (podcastId: string, checkType: string = 'all') => {
+    return api.execute(
+      () => fetch('/api/ai/quality-monitoring', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ podcastId, checkType })
+      }),
+      'Failed to check quality alerts'
+    )
+  }, [api])
+
+  return {
+    ...api,
+    checkQualityAlerts
+  }
+}
+
 // Специализированный хук для загрузки данных чартов
 export function useChartData() {
   const api = useApi({

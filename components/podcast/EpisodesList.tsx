@@ -2,15 +2,21 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Episode } from '@/lib/types/database'
 import { formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
+import { useState } from 'react'
+import { ContentAnalysis } from './ContentAnalysis'
+import { FileText } from 'lucide-react'
 
 interface EpisodesListProps {
   episodes: Episode[]
+  podcastId: string
 }
 
-export function EpisodesList({ episodes }: EpisodesListProps) {
+export function EpisodesList({ episodes, podcastId }: EpisodesListProps) {
+  const [selectedEpisode, setSelectedEpisode] = useState<Episode | null>(null)
   const formatDuration = (seconds?: number) => {
     if (!seconds) return 'Неизвестно'
     
@@ -48,6 +54,7 @@ export function EpisodesList({ episodes }: EpisodesListProps) {
   }
 
   return (
+    <>
     <Card>
       <CardHeader>
         <CardTitle>Последние эпизоды</CardTitle>
@@ -77,6 +84,18 @@ export function EpisodesList({ episodes }: EpisodesListProps) {
                   </div>
                 </div>
                 
+                <div className="flex items-center gap-2 ml-4">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setSelectedEpisode(episode)}
+                    className="flex items-center gap-2"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Анализ
+                  </Button>
+                </div>
+                
                 {episode.audio_url && (
                   <div className="flex-shrink-0 ml-4">
                     <a
@@ -95,5 +114,27 @@ export function EpisodesList({ episodes }: EpisodesListProps) {
         </div>
       </CardContent>
     </Card>
+
+    {/* Модальное окно для анализа контента */}
+    {selectedEpisode && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Анализ контента эпизода</h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedEpisode(null)}
+              >
+                ✕
+              </Button>
+            </div>
+            <ContentAnalysis episode={selectedEpisode} podcastId={podcastId} />
+          </div>
+        </div>
+      </div>
+    )}
+  </>
   )
 }
