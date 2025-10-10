@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
 
 // Получение данных для сравнения с конкурентами
 async function getCompetitorComparisonData(podcastId: string, category: string) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   try {
     // Получаем данные вашего подкаста

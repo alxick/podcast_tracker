@@ -121,7 +121,7 @@ export function ContentAnalysis({ episode, podcastId }: ContentAnalysisProps) {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
-                {analysis.topics.map((topic, index) => (
+                {analysis.topics.map((topic: string, index: number) => (
                   <Badge key={index} variant="default" className="text-sm">
                     {topic}
                   </Badge>
@@ -155,7 +155,7 @@ export function ContentAnalysis({ episode, podcastId }: ContentAnalysisProps) {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-1">
-                  {analysis.key_phrases.map((phrase, index) => (
+                  {analysis.key_phrases.map((phrase: string, index: number) => (
                     <Badge key={index} variant="outline" className="text-xs">
                       {phrase}
                     </Badge>
@@ -280,7 +280,7 @@ export function ContentAnalysis({ episode, podcastId }: ContentAnalysisProps) {
             </CardHeader>
             <CardContent>
               <ul className="space-y-3">
-                {analysis.recommendations.map((recommendation, index) => (
+                {analysis.recommendations.map((recommendation: string, index: number) => (
                   <li key={index} className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0">
                       {index + 1}

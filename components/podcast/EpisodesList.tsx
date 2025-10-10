@@ -64,7 +64,7 @@ export function EpisodesList({ episodes, podcastId }: EpisodesListProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {episodes.map((episode: { id: string; title: string; published_at: string; duration?: number; description?: string; audio_url?: string }) => (
+          {episodes.map((episode: Episode) => (
             <div key={episode.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">

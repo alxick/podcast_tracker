@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
 
 // Получение данных для мониторинга качества
 async function getQualityMonitoringData(podcastId: string) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   try {
     // Получаем последние 10 эпизодов

@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
 
 // Получение данных эпизодов
 async function getEpisodesData(podcastId: string, timeRange: number) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   try {
     const startDate = new Date()

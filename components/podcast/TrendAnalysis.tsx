@@ -90,7 +90,7 @@ export function TrendAnalysis({ podcast }: TrendAnalysisProps) {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
-                {analysis.trending_topics.map((topic, index) => (
+                {analysis.trending_topics.map((topic: string, index: number) => (
                   <Badge key={index} variant="default" className="text-sm">
                     {topic}
                   </Badge>
@@ -109,7 +109,7 @@ export function TrendAnalysis({ podcast }: TrendAnalysisProps) {
             </CardHeader>
             <CardContent>
               <ul className="space-y-2">
-                {analysis.seasonal_patterns.map((pattern, index) => (
+                {analysis.seasonal_patterns.map((pattern: string, index: number) => (
                   <li key={index} className="flex items-start gap-2">
                     <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0" />
                     <span className="text-sm">{pattern}</span>
@@ -129,7 +129,7 @@ export function TrendAnalysis({ podcast }: TrendAnalysisProps) {
             </CardHeader>
             <CardContent>
               <ul className="space-y-2">
-                {analysis.competitor_moves.map((move, index) => (
+                {analysis.competitor_moves.map((move: string, index: number) => (
                   <li key={index} className="flex items-start gap-2">
                     <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 flex-shrink-0" />
                     <span className="text-sm">{move}</span>
@@ -149,7 +149,7 @@ export function TrendAnalysis({ podcast }: TrendAnalysisProps) {
             </CardHeader>
             <CardContent>
               <ul className="space-y-2">
-                {analysis.opportunity_alerts.map((opportunity, index) => (
+                {analysis.opportunity_alerts.map((opportunity: string, index: number) => (
                   <li key={index} className="flex items-start gap-2">
                     <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0" />
                     <span className="text-sm">{opportunity}</span>
@@ -169,7 +169,7 @@ export function TrendAnalysis({ podcast }: TrendAnalysisProps) {
             </CardHeader>
             <CardContent>
               <ul className="space-y-3">
-                {analysis.recommendations.map((recommendation, index) => (
+                {analysis.recommendations.map((recommendation: string, index: number) => (
                   <li key={index} className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0">
                       {index + 1}

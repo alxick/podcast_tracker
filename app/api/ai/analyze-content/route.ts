@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
 
 // Получение данных эпизода
 async function getEpisodeData(episodeId: string, podcastId: string) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   try {
     const { data: episode, error } = await supabase

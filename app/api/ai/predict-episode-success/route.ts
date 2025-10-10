@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
 
 // Получение данных для прогнозирования
 async function getPredictionData(episodeId: string, podcastId: string, episodeData?: any) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   try {
     // Получаем данные эпизода

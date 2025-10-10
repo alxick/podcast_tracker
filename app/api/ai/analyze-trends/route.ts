@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
 
 // Получение данных о трендах
 async function getTrendData(podcastId: string, category: string) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   try {
     // Получаем топ-20 подкастов в категории за последние 30 дней
